@@ -1,0 +1,11 @@
+:80 {
+    root * /srv/littlelegion
+    encode zstd gzip
+    @pages path /privacy /support /tos
+    rewrite @pages {path}/index.html
+    file_server
+    handle_errors {
+        rewrite * /404/index.html
+        file_server
+    }
+}

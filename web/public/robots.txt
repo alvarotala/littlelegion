@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://littlelegion.app/sitemap.xml

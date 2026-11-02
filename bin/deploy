@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Run on the Linux production host from any working directory.
+set -Eeuo pipefail
+umask 077
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$ROOT"
+if [[ ${1:-} == --help ]]; then
+  cat <<'HELP'
+Usage: bin/deploy
+Pull the current branch (fast-forward only), build Docker images, back up and
+restore-test PostgreSQL, then start PostgreSQL, Nakama, multiplayer and the web.
+Requires existing .cache/online/{env,config.yml} and Builds/Server/FrontierServer.
+Run during a maintenance window. Active matches cause deployment to stop.
+The Linux Unity build must be compiled on the Mac and transferred beforehand.
+HELP
+  exit 0
+fi
+[[ $# == 0 ]] || { echo 'Usage: bin/deploy [--help]' >&2; exit 2; }
+for cmd in git docker flock; do command -v "$cmd" >/dev/null || { echo "Missing command: $cmd" >&2; exit 1; }; done
+mkdir -p .cache/online
+exec 9>.cache/online/deploy.lock
+flock -n 9 || { echo 'Another deployment is running.' >&2; exit 1; }
+[[ -z $(git status --porcelain) ]] || { echo 'Working tree has local changes. Commit or preserve them before deploying.' >&2; exit 1; }
+git symbolic-ref --quiet --short HEAD >/dev/null || { echo 'Deploy requires a branch, not detached HEAD.' >&2; exit 1; }
+git rev-parse --abbrev-ref '@{upstream}' >/dev/null
+for file in .cache/online/env .cache/online/config.yml Builds/Server/FrontierServer; do
+  [[ -s $file ]] || { echo "Missing $file; transfer the existing configuration/build before deploying." >&2; exit 1; }
+done
+LL_RELEASE=$(date -u +%Y%m%dT%H%M%SZ)-$$
+LL_BACKUP="$ROOT/.cache/online/backups/$LL_RELEASE"
+mkdir -p "$LL_BACKUP"
+git rev-parse HEAD > "$LL_BACKUP/revision.txt"
+cp .cache/online/env .cache/online/config.yml compose.online.yml "$LL_BACKUP/"
+[[ ! -f .cache/online/Caddyfile ]] || cp .cache/online/Caddyfile "$LL_BACKUP/Caddyfile.previous"
+[[ ! -f .cache/online/compose.prod.yml ]] || cp .cache/online/compose.prod.yml "$LL_BACKUP/compose.prod.previous.yml"
+cp -R web/deploy "$LL_BACKUP/web-deploy"
+echo 'Pulling the current branch...'
+git pull --ff-only
+git rev-parse HEAD > "$LL_BACKUP/revision-after.txt"
+# All runtime services use this single Compose file and the existing project name.
+dc() { docker compose --env-file .cache/online/env -f compose.online.yml "$@"; }
+dc config --quiet
+LL_OLD_CONTAINERS=()
+for service in nakama server caddy; do
+  id=$(dc ps -q "$service")
+  if [[ -n $id ]]; then
+    LL_OLD_CONTAINERS+=("$id")
+    docker image tag "$(docker inspect --format '{{.Image}}' "$id")" "little-legion-$service:rollback-$LL_RELEASE"
+  fi
+done
+# Builds and Caddy validation happen before entering maintenance.
+dc build migrate server
+dc run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile
+LL_MAINTENANCE=0
+LL_APPLYING=0
+LL_VERIFY_DB=''
+cleanup() {
+  code=$?
+  trap - EXIT
+  if [[ -n $LL_VERIFY_DB ]]; then dc exec -T postgres dropdb -U nakama --if-exists "$LL_VERIFY_DB" || true; fi
+  if [[ $code != 0 ]]; then
+    echo "Deploy failed. Backup: $LL_BACKUP" >&2
+    if [[ $LL_MAINTENANCE == 1 && $LL_APPLYING == 0 && ${#LL_OLD_CONTAINERS[@]} -gt 0 ]]; then
+      # Start the original containers, not the newly built image tags.
+      docker start "${LL_OLD_CONTAINERS[@]}" || true
+    elif [[ $LL_APPLYING == 1 ]]; then
+      echo 'Migration/update started; inspect logs and backup before attempting recovery.' >&2
+    fi
+  fi
+  exit "$code"
+}
+trap cleanup EXIT
+LL_MAINTENANCE=1
+dc stop caddy
+# Stop rather than interrupt a pending or active game; Caddy is reopened by the trap.
+if [[ -n $(dc ps -q nakama) ]]; then
+  busy=$(dc exec -T postgres psql -X -At -v ON_ERROR_STOP=1 -U nakama -d nakama -c "SELECT (SELECT count(*) FROM ll_matches WHERE status NOT IN ('finished','aborted')) + (SELECT count(*) FROM ll_servers WHERE match_id IS NOT NULL);")
+  [[ $busy == 0 ]] || { echo 'Matches are still active/pending. Retry after players have finished.' >&2; exit 1; }
+fi
+dc stop server nakama
+dc up -d --wait postgres
+# Quiescent snapshot; verify an actual restore before running migrations.
+dc exec -T postgres pg_dump -U nakama -d nakama -Fc > "$LL_BACKUP/nakama.dump"
+[[ -s "$LL_BACKUP/nakama.dump" ]]
+LL_VERIFY_DB="ll_restore_$(date +%s)_$$"
+dc exec -T postgres createdb -U nakama "$LL_VERIFY_DB"
+dc exec -T postgres pg_restore --exit-on-error --no-owner --no-privileges -U nakama -d "$LL_VERIFY_DB" < "$LL_BACKUP/nakama.dump"
+dc exec -T postgres dropdb -U nakama "$LL_VERIFY_DB"
+LL_VERIFY_DB=''
+touch "$LL_BACKUP/restore-verified"
+LL_APPLYING=1
+dc run --rm --no-deps migrate
+# Migration already ran explicitly; do not rerun its dependency container.
+dc up -d --no-deps --wait --wait-timeout 120 nakama
+dc up -d --no-deps --wait --wait-timeout 120 server caddy
+dc exec -T nakama /nakama/nakama healthcheck 7350
+for route in / /privacy /support /tos; do
+  dc exec -T caddy wget -q -O /dev/null "http://127.0.0.1:8080$route"
+done
+dc ps
+echo "Deployment complete. Verified database backup: $LL_BACKUP"
+echo 'Public DNS/HTTPS and a real multiplayer match must also be verified from outside the host.'

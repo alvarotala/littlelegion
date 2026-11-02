@@ -39,3 +39,8 @@ Assets/DefaultNetworkPrefabs.asset.meta
 
 # Release signing: keep the private key and credentials local to this project.
 /Signing/private/
+
+# Deployment entrypoint (other generated bin directories remain ignored).
+!/bin/
+/bin/*
+!/bin/deploy

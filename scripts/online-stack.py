@@ -77,10 +77,10 @@ def main():
         initialize(args.host)
     compose = ["docker", "compose", "--env-file", str(LOCAL / "env"), "-f", str(ROOT / "compose.online.yml")]
     commands = {
-        "up": ["--profile", "game", "up", "--build", "-d", "--wait", "--wait-timeout", "90"],
+        "up": ["up", "--build", "-d", "--wait", "--wait-timeout", "90"],
         "backend": ["up", "--build", "-d", "--wait", "--wait-timeout", "90", "nakama"],
-        "down": ["--profile", "game", "down"],
-        "status": ["--profile", "game", "ps", "-a"],
+        "down": ["down"],
+        "status": ["ps", "-a"],
         "logs": ["logs", "--tail", "100", "nakama", "server"],
     }
     if args.action == "test":

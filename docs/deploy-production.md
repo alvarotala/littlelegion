@@ -91,6 +91,22 @@ git log -1 --oneline
 mkdir -p Builds/Server
 ```
 
+El repositorio está en `https://github.com/alvarotala/littlelegion.git`.
+Después del cambio de nombre, actualizar el remoto de las instalaciones existentes
+(conservando el método de autenticación que utilicen):
+
+```bash
+# HTTPS
+git remote set-url origin https://github.com/alvarotala/littlelegion.git
+# Si la instalación usa SSH, usar en su lugar:
+# git remote set-url origin git@github.com:alvarotala/littlelegion.git
+git remote -v
+```
+
+El cambio del nombre del repositorio no renombra las carpetas de las instalaciones,
+los proyectos Compose ni sus volúmenes. Si Coolify u otro servicio obtiene las
+fuentes desde GitHub, actualizar también allí la URL del repositorio.
+
 Si el repositorio ya existe, no clonarlo otra vez. Comprobar `git status --short`
 y `git branch --show-current`. Usar la rama de despliegue acordada; no cambiar a
 `main` suponiendo que ya contiene multiplayer y ranking.
@@ -141,42 +157,15 @@ El `env` conserva las credenciales en ejecuciones posteriores de `init`.
 ejecutar init**: generar claves nuevas no recupera las credenciales anteriores.
 El mensaje HTTP que imprime el helper es informativo; los jugadores usan HTTPS.
 
-Crear los siguientes archivos solo durante la instalación inicial. En un
-servidor existente, revisarlos antes de sobrescribir personalizaciones:
+El único archivo de servicios es `compose.online.yml`: incluye PostgreSQL,
+migración, Nakama, servidor Unity y Caddy con la landing. Caddy utiliza
+`web/deploy/Caddyfile` y `web/deploy/site.caddy`, versionados junto al código.
+Ya no se utiliza `.cache/online/compose.prod.yml` ni `.cache/online/Caddyfile`;
+conservarlos como respaldo si contienen personalizaciones y trasladarlas a los
+archivos versionados antes de desplegar.
 
-```bash
-cat > .cache/online/Caddyfile <<'EOF'
-server-us-1.littlelegion.app {
-    reverse_proxy nakama:7350
-}
-EOF
-
-cat > .cache/online/compose.prod.yml <<'EOF'
-services:
-  nakama:
-    ports: !override
-      - "127.0.0.1:7350:7350"
-      - "127.0.0.1:7351:7351"
-
-  caddy:
-    image: caddy:2
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./.cache/online/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      nakama:
-        condition: service_healthy
-
-volumes:
-  caddy-data:
-  caddy-config:
-EOF
-```
+Ambos dominios, `littlelegion.app` y `server-us-1.littlelegion.app`, deben apuntar
+al host. Se conservan el proyecto `little-legion-online` y sus volúmenes existentes.
 
 Caddy obtiene y renueva el certificado para el dominio y redirige HTTP a HTTPS.
 Requiere DNS correcto, los puertos 80/443 accesibles y almacenamiento persistente
@@ -190,28 +179,40 @@ confiando solo en UFW para cerrarlo. [Docker y UFW](https://docs.docker.com/engi
 
 ## 4. Comando común y primer arranque
 
-Definir esta función **al abrir cada sesión SSH**. Usa rutas absolutas y ambos
-archivos Compose, también para backup, logs y actualizaciones:
+Definir esta función **al abrir cada sesión SSH**. Usa rutas absolutas y el único
+archivo Compose, también para backup, logs y actualizaciones:
 
 ```bash
 cd /root/little-legion
 dc() {
   docker compose --project-directory /root/little-legion \
     --env-file /root/little-legion/.cache/online/env \
-    -f /root/little-legion/compose.online.yml \
-    -f /root/little-legion/.cache/online/compose.prod.yml \
-    --profile game "$@"
+    -f /root/little-legion/compose.online.yml "$@"
 }
 ```
 
-No usar `python3 scripts/online-stack.py up`, `backend` o `down` en producción:
-ese helper usa solamente el Compose local, sin el override de HTTPS y loopback.
-Su acción `init` sí se usa aquí para generar la configuración de Nakama.
+`bin/deploy` realiza las actualizaciones habituales desde cualquier directorio:
+
+```bash
+bin/deploy
+```
+
+Exige árbol limpio y rama con upstream; hace `pull --ff-only`, construye imágenes,
+valida Caddy, entra en mantenimiento, comprueba que no haya partidas pendientes,
+respalda PostgreSQL y comprueba una restauración temporal antes de migrar.
+Finalmente levanta Nakama, multiplayer y Caddy y verifica la API y las cuatro
+páginas web. No cambia de rama ni publica commits. Si falla antes de migrar,
+reanuda los contenedores originales; si ya empezó la migración, informa el fallo
+y deja la recuperación a cargo del operador. Los backups quedan privados en
+`.cache/online/backups/`. Requiere Bash, `flock`, Git y Docker Compose en Linux.
+
+El script empaqueta el build Linux que ya está en `Builds/Server/`; no compila
+Unity. Si cambia el juego, generar y transferir el build completo desde la Mac
+antes de desplegar. Para el primer arranque también se puede usar:
 
 ```bash
 test -s .cache/online/env
-test -f .cache/online/compose.prod.yml
-test -f .cache/online/Caddyfile
+test -f web/deploy/Caddyfile
 test -f Builds/Server/FrontierServer
 test -f Builds/Server/GameAssembly.so
 dc config --quiet
@@ -318,8 +319,8 @@ LL_BACKUP="$PWD/.cache/online/backups/$LL_RELEASE"
   mkdir -p "$LL_BACKUP"
   git rev-parse HEAD > "$LL_BACKUP/revision.txt"
   git branch --show-current > "$LL_BACKUP/branch.txt"
-  cp .cache/online/env .cache/online/config.yml .cache/online/Caddyfile \
-    .cache/online/compose.prod.yml compose.online.yml "$LL_BACKUP/"
+  cp .cache/online/env .cache/online/config.yml compose.online.yml "$LL_BACKUP/"
+  cp -R web/deploy "$LL_BACKUP/web-deploy"
   docker image tag "$(docker inspect --format '{{.Image}}' "$(dc ps -q nakama)")" \
     "little-legion-nakama:rollback-$LL_RELEASE"
   docker image tag "$(docker inspect --format '{{.Image}}' "$(dc ps -q server)")" \
@@ -465,8 +466,8 @@ Comprobar que existen `revision.txt`, los archivos privados y ambas imágenes
   docker image inspect "little-legion-nakama:rollback-$LL_RELEASE" >/dev/null
   docker image inspect "little-legion-server:rollback-$LL_RELEASE" >/dev/null
   git switch --detach "$(cat "$LL_BACKUP/revision.txt")"
-  cp "$LL_BACKUP/env" "$LL_BACKUP/config.yml" "$LL_BACKUP/Caddyfile" \
-    "$LL_BACKUP/compose.prod.yml" .cache/online/
+  cp "$LL_BACKUP/env" "$LL_BACKUP/config.yml" .cache/online/
+  cp -R "$LL_BACKUP/web-deploy/." web/deploy/
   cat > .cache/online/compose.rollback.yml <<EOF
 services:
   nakama:
@@ -479,9 +480,8 @@ dcr() {
   docker compose --project-directory /root/little-legion \
     --env-file /root/little-legion/.cache/online/env \
     -f /root/little-legion/compose.online.yml \
-    -f /root/little-legion/.cache/online/compose.prod.yml \
     -f /root/little-legion/.cache/online/compose.rollback.yml \
-    --profile game "$@"
+    "$@"
 }
 ```
 
@@ -571,7 +571,7 @@ docker system df
 | Síntoma | Comprobación y acción |
 | --- | --- |
 | `couldn't find env file` | Instalación nueva: ejecutar `init`. Instalación con datos: recuperar el env existente, no inventar nuevas credenciales |
-| `compose.prod.yml: no such file` | Crear ambos archivos del paso 3; comprobar el directorio de trabajo |
+| Falta configuración | Recuperar `.cache/online/env` y `config.yml`; usar solo `compose.online.yml` |
 | `unknown tag !override` | Actualizar Docker Compose a una versión compatible; no eliminar el override porque podría dejar 7350 expuesto |
 | `FrontierServer` ausente durante el build | Transferir el directorio Linux completo desde la Mac antes del build Docker |
 | `exec format error` | Confirmar servidor Ubuntu amd64 y artefacto ELF Linux x86-64; no copiar la app macOS |

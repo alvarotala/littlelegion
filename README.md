@@ -55,7 +55,7 @@ python3 scripts/online-stack.py init --host 192.168.100.157
 python3 scripts/online-stack.py up
 ```
 
-Abrir **Multijugador → Buscar partida** en ambos clientes. El tablero se coloca antes de iniciar la búsqueda. Nakama conserva una identidad por instalación, encuentra dos jugadores compatibles y entrega a cada uno un ticket para el mismo servidor NGO. La configuración del servicio online se guarda separada de la conexión LAN. Desde Quest, usar `http://192.168.100.157:7350` como servicio; el endpoint de juego se recibe automáticamente.
+Abrir **Multijugador → Buscar partida** en ambos clientes. El tablero se coloca antes de iniciar la búsqueda. Nakama conserva una identidad por instalación, encuentra dos jugadores compatibles y entrega a cada uno un ticket para el mismo servidor NGO. La configuración del servicio online se guarda separada de la conexión LAN. Para pruebas LAN, añadir `LL_API_BIND=0.0.0.0` a `.cache/online/env` y usar `http://192.168.100.157:7350` desde Quest; el endpoint de juego se recibe automáticamente.
 
 Las partidas públicas nuevas son clasificadas. Cada cuenta comienza con **1000 puntos Elo** y el servidor actualiza su puntuación al terminar, con **K=32**. El menú permite consultar el perfil y los diez primeros; una cuenta aparece en la tabla después de su primera partida clasificada. La búsqueda comienza en **±100 puntos**, amplía el rango cada 20 segundos hasta **±400**, y exige que ambos jugadores acepten la diferencia. Las partidas históricas anteriores a esta incorporación se conservan sin puntuación. Reglas y autoridad del resultado en [Ranking y búsqueda por nivel](docs/ranking.md).
 
@@ -105,3 +105,19 @@ Por ahora las dos facciones comparten todas las reglas y estadísticas; se difer
 - [Ranking Elo y búsqueda de rivales por nivel](docs/ranking.md)
 - [Formato de mapas](docs/maps.md)
 - [Registro de validación y pendientes](docs/validation.md)
+
+## Sitio web
+
+La landing en inglés y las páginas `/privacy`, `/support` y `/tos` están en
+[`web/public/`](web/public/). Ver [`web/README.md`](web/README.md) para abrir la
+vista previa Docker y servirlas desde el Caddy del stack existente.
+
+El stack completo usa un único `compose.online.yml`: PostgreSQL, Nakama,
+multiplayer y Caddy con la web. En el servidor configurado, actualizar con:
+
+```sh
+bin/deploy
+```
+
+El script hace pull, backup con restauración de prueba, build Docker y arranque.
+El binario Linux de Unity debe estar previamente compilado en `Builds/Server/`.
