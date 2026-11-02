@@ -6,17 +6,15 @@ namespace Frontier.Runtime
     public sealed partial class CommandPanel
     {
         // Presentation cues use the filtered view and existing console action IDs.
-        // An action may also point to the controller while its wheel is closed.
         private int tutorialCueEntity,tutorialCueResource;
         private Point? tutorialCuePoint;
         private string tutorialCueAction;
-        private bool tutorialCueWheel;
 
         private void UpdateTutorialContent()
         {
             var lesson=Session.Tutorial;
             if(lesson==null||Session.View==null)return;
-            tutorialCueEntity=tutorialCueResource=0;tutorialCuePoint=null;tutorialCueAction=null;tutorialCueWheel=false;
+            tutorialCueEntity=tutorialCueResource=0;tutorialCuePoint=null;tutorialCueAction=null;
             ((LocalizedText)tutorialProgress).SetKey("PLAY GUIDE · {0}/{1}",lesson.StepNumber,lesson.StepCount);
             tutorialState.text=lesson.Briefing?"Ready? Let's try it!":Session.IsPaused?"Take your time":"Your turn!";
             string select=Bindings.Name(Quest.Active,"select"),order=Bindings.Name(Quest.Active,"order");
@@ -46,7 +44,7 @@ namespace Frontier.Runtime
                     else{tutorialCuePoint=lesson.FocusPoint;TutorialInstruction("Point at the violet marker and press {0}.",order);}break;
                 case TutorialStep.GatherMinerals:
                     TutorialText("Bring home minerals","Minerals buy buildings and soldiers. Two workers per patch!");
-                    TutorialGather(select,order,false);break;
+                    TutorialGather(select,order);break;
                 case TutorialStep.SelectHeadquarters:
                     TutorialText("Home sweet base","Your headquarters receives resources and trains new workers.");
                     TutorialSelectEntity(lesson.FocusEntity,"Select your headquarters with {0}.",select);break;
@@ -62,36 +60,12 @@ namespace Frontier.Runtime
                         TutorialInstruction(Quest.Active?"Choose {0} in the console with Trigger / {1}.":"Click {0} in the console.",name,Bindings.MenuConfirmName);
                     }
                     break;
-                case TutorialStep.OpenMenu:
-                    TutorialText("Take a breather","Your game menu holds settings, controls and helpful guides.");
-                    tutorialCueAction="pause";
-                    TutorialInstruction("Press {0}, or choose Pause in the console.",Bindings.Name(Quest.Active,"back"));break;
-                case TutorialStep.ResumeMenu:
-                    TutorialText("Back to the action","Your units wait while you explore the game menu.");
-                    tutorialCueAction="resume";
-                    TutorialInstruction(lesson.Briefing?"First Continue, then choose Resume match.":"Choose Resume match, or press {0}.",Quest.Active?Bindings.MenuBackName:"Escape");break;
-                case TutorialStep.OpenWheel:
-                    TutorialText("Give it a spin","Your stick opens a handy shortcut wheel for actions.");
-                    if(!TutorialWorkerSelected())TutorialSelectEntity(lesson.FocusEntity,"First, select this worker with {0}.",select);
-                    else
-                    {
-                        tutorialCueWheel=true;
-                        if(lesson.WheelExplored&&TutorialWheel!=null&&TutorialWheel.IsOpen)TutorialInstruction("Explore the wheel. Press {0} to go back, then press it again to close and continue.",Bindings.MenuBackName);
-                        else TutorialInstruction("Tilt the {0} stick right. That's your action wheel!",Bindings.HandName.ToLowerInvariant());
-                    }
-                    break;
                 case TutorialStep.BuildSupply:
                     TutorialText("Room for everyone","Supply makes room for more workers and soldiers.");
                     TutorialBuild(select,name,definition);break;
                 case TutorialStep.BuildBarracks:
                     TutorialText("Time for soldiers","Military buildings train troops to protect your busy workers.");
                     TutorialBuild(select,name,definition);break;
-                case TutorialStep.BuildExtractor:
-                    TutorialText("Let's get gas","Gas pays for advanced units and upgrades later on.");
-                    TutorialBuild(select,name,definition);break;
-                case TutorialStep.GatherGas:
-                    TutorialText("Put gas to work","Extractors need workers. Three per gas deposit works best.");
-                    TutorialGather(select,order,true);break;
                 case TutorialStep.TrainArmy:
                     TutorialText("Your little legion","These three ranged soldiers will lead your first attack.");
                     int remaining=System.Math.Max(0,GuidedTutorial.ArmySize-lesson.AcceptedOrderCount);
@@ -101,25 +75,17 @@ namespace Frontier.Runtime
                     else if(TutorialWaitForCost(definition))break;
                     else
                     {
-                        tutorialCueAction="train:"+definition;tutorialCueWheel=Quest.Active;
-                        TutorialInstruction(Quest.Active
-                            ?remaining==1?"Stick right → {0} → press Trigger once.":"Stick right → {0} → press Trigger {1} times."
-                            :remaining==1?"Click {0} once in the console.":"Click {0} {1} times in the console.",name,remaining);
+                        tutorialCueAction="train:"+definition;
+                        if(Quest.Active&&remaining==1)
+                            TutorialInstruction("Choose {0} in the console once with Trigger / {1}.",name,Bindings.MenuConfirmName);
+                        else TutorialInstruction(Quest.Active?"Choose {0} in the console {1} times with Trigger / {2}.":
+                            remaining==1?"Click {0} once in the console.":"Click {0} {1} times in the console.",name,remaining,Bindings.MenuConfirmName);
                     }
                     break;
                 case TutorialStep.SelectArmy:
                     TutorialText("Round up the squad","Soldiers fight together. Leave your workers gathering at home.");
                     tutorialCueEntity=lesson.FocusEntity;
                     TutorialInstruction("Hold {0} and drag a box around your three soldiers.",select);break;
-                case TutorialStep.SaveGroup:
-                    TutorialText("Save your squad","A control group remembers your army for quick selection.");
-                    if(!TutorialArmySelected()){TutorialSelectArmy(select);break;}
-                    tutorialCueAction="group:0";tutorialCueWheel=Quest.Active;
-                    TutorialInstruction(Quest.Active?"Stick up → group 1 (up) → press Stick click.":"Hold {0} and press {1} to save group 1.",Quest.Active?"":Bindings.Name(false,"save"),Quest.Active?"":Bindings.Name(false,"group1"));break;
-                case TutorialStep.RecallGroup:
-                    TutorialText("Squad, assemble!","Your saved group brings the same soldiers back into selection.");
-                    tutorialCueAction="group:0";tutorialCueWheel=Quest.Active;
-                    TutorialInstruction(Quest.Active?"Stick up → group 1 (up) → Trigger.":"Press {0} to select your saved squad.",Quest.Active?"":Bindings.Name(false,"group1"));break;
                 case TutorialStep.AttackMove:
                     TutorialText("March into action","Attack Move travels forward and fights enemies along the way.");
                     TutorialAttack(select,false);break;
@@ -131,39 +97,10 @@ namespace Frontier.Runtime
                     tutorialProgress.text="VICTORY!";tutorialState.text="Nicely played!";
                     TutorialInstruction("Head to the main menu, or play this tutorial again.");break;
             }
-            if(!lesson.Briefing)TutorialWheelNavigation();
             if(lesson.Briefing&&!lesson.Complete)
             {
-                tutorialCueEntity=tutorialCueResource=0;tutorialCuePoint=null;tutorialCueAction=null;tutorialCueWheel=false;
+                tutorialCueEntity=tutorialCueResource=0;tutorialCuePoint=null;tutorialCueAction=null;
                 tutorialInstruction.text="";
-            }
-        }
-
-        private void TutorialWheelNavigation()
-        {
-            if(!tutorialCueWheel||TutorialWheel==null||!TutorialWheel.IsOpen||string.IsNullOrEmpty(tutorialCueAction))return;
-            string action=tutorialCueAction=="group:0"?"group-1":tutorialCueAction;
-            if(TutorialWheel.Items.Any(item=>item.Id==action))return;
-            if(TutorialWheel.Page!=WheelPage.Root)
-            {
-                tutorialCueAction="back";
-                TutorialInstruction("Press {0} to go back in the wheel.",Bindings.MenuBackName);
-                return;
-            }
-            if(tutorialCueAction=="group:0")
-            {
-                tutorialCueAction="groups-menu";
-                TutorialInstruction("Tilt up to Groups, then press Trigger.");
-            }
-            else if(tutorialCueAction=="attack-move")
-            {
-                tutorialCueAction="orders-menu";
-                TutorialInstruction("Tilt left to Unit orders, then press Trigger.");
-            }
-            else if(tutorialCueAction.StartsWith("build:",System.StringComparison.Ordinal)||tutorialCueAction.StartsWith("train:",System.StringComparison.Ordinal))
-            {
-                tutorialCueAction="selection-menu";
-                TutorialInstruction("Tilt right to Selection, then press Trigger.");
             }
         }
 
@@ -184,25 +121,25 @@ namespace Frontier.Runtime
             if(TutorialWaitForCost(definition))return;
             if(Session.BuildDefinition!=definition)
             {
-                tutorialCueAction="build:"+definition;tutorialCueWheel=Quest.Active;
-                TutorialInstruction(Quest.Active?"Stick right → {0} → Trigger.":"Click {0} in the console.",name);return;
+                tutorialCueAction="build:"+definition;
+                TutorialInstruction(Quest.Active?"Choose {0} in the console with Trigger / {1}.":"Click {0} in the console.",name,Bindings.MenuConfirmName);return;
             }
             tutorialCuePoint=lesson.FocusPoint;
             TutorialInstruction("Point at the violet outline and press {0}.",select);
         }
 
-        private void TutorialGather(string select,string order,bool gas)
+        private void TutorialGather(string select,string order)
         {
             var lesson=Session.Tutorial;
             if(lesson.AcceptedOrderCount>0)
             {
                 tutorialCueEntity=lesson.FocusEntity;
-                TutorialInstruction(gas?"Gas delivery underway! Let your worker bring it home.":"Minerals on the move! Let your worker bring them home.");return;
+                TutorialInstruction("Minerals on the move! Let your worker bring them home.");return;
             }
             if(!TutorialWorkerSelected())
             {TutorialSelectEntity(lesson.FocusEntity,"First, select this worker with {0}.",select);return;}
             tutorialCueResource=lesson.FocusResource;
-            TutorialInstruction(gas?"Point at this gas deposit and press {0}.":"Point at these minerals and press {0}.",order);
+            TutorialInstruction("Point at these minerals and press {0}.",order);
         }
 
         private void TutorialAttack(string select,bool finalAttack)
@@ -216,8 +153,8 @@ namespace Frontier.Runtime
             if(!TutorialArmySelected()){TutorialSelectArmy(select);return;}
             if(!Session.AttackMoveMode)
             {
-                tutorialCueAction="attack-move";tutorialCueWheel=Quest.Active;
-                TutorialInstruction(Quest.Active?"Stick left → Attack Move → Trigger.":"Click Attack Move in the console.");return;
+                tutorialCueAction="attack-move";
+                TutorialInstruction(Quest.Active?"Choose Attack Move in the console with Trigger / {0}.":"Click Attack Move in the console.",Bindings.MenuConfirmName);return;
             }
             tutorialCuePoint=lesson.FocusPoint;
             TutorialInstruction(finalAttack?"Aim at the enemy marker and press {0}.":"Aim at the ground marker and press {0}.",select);
@@ -235,7 +172,7 @@ namespace Frontier.Runtime
         private bool TutorialCancelForSelection(bool worker)
         {
             if(Session.BuildDefinition==null&&!Session.AttackMoveMode)return false;
-            tutorialCueEntity=tutorialCueResource=0;tutorialCuePoint=null;tutorialCueWheel=false;tutorialCueAction="cancel";
+            tutorialCueEntity=tutorialCueResource=0;tutorialCuePoint=null;tutorialCueAction="cancel";
             TutorialInstruction(worker?"Press {0} to cancel, then select your worker.":"Press {0} to cancel, then select your squad.",Bindings.Name(Quest.Active,"back"));
             return true;
         }

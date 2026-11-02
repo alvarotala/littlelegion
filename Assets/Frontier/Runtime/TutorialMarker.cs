@@ -52,7 +52,7 @@ namespace Frontier.Runtime
             footprint.widthMultiplier = board.CellScale * .11f;
             Point focus = point.Value;
             float radius = cueProvided ? cueRadius : .8f;
-            bool buildStep = tutorial.Step == TutorialStep.BuildSupply || tutorial.Step == TutorialStep.BuildBarracks || tutorial.Step == TutorialStep.BuildExtractor;
+            bool buildStep = tutorial.Step == TutorialStep.BuildSupply || tutorial.Step == TutorialStep.BuildBarracks;
             bool build = buildStep && tutorial.AcceptedOrderCount == 0 && (!cueProvided || cueFoundation);
             var entity = board.Session.View?.entities.FirstOrDefault(e => e.id == tutorial.FocusEntity && !e.remembered);
             if (!cueProvided && !build && tutorial.FocusResource == 0 && entity != null && board.Session.Catalog[entity.definition].building)
@@ -80,9 +80,7 @@ namespace Frontier.Runtime
                 // Foundation geometry always uses the authored placement point,
                 // independently of a cue following a worker or another object.
                 Point placement = tutorial.FocusPoint.Value;
-                var origin = tutorial.Step == TutorialStep.BuildExtractor
-                    ? new Point(Mathf.Floor(placement.x - size * .5f), Mathf.Floor(placement.y - size * .5f))
-                    : new Point(Mathf.Floor(placement.x), Mathf.Floor(placement.y));
+                var origin = new Point(Mathf.Floor(placement.x), Mathf.Floor(placement.y));
                 footprint.positionCount = 4;
                 footprint.SetPositions(new[] {
                     new Vector3(origin.x, height, origin.y), new Vector3(origin.x + size, height, origin.y),

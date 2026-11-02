@@ -17,10 +17,8 @@ namespace Frontier.Runtime
         private Image tutorialProgressFill;
         private LineRenderer tutorialConnector,tutorialDestination;
         private Material tutorialLineMaterial;
-        public ActionWheel TutorialWheel { get; set; }
         private bool TutorialCardVisible=>Session.IsTutorial&&Session.Running&&!Session.IsCountingDown&&!Session.HasSystemPause&&!Quest.Placing&&Page!=MenuPage.LeaveConfirmation;
-        private bool TutorialResumeBriefing=>Session.IsTutorial&&Session.Tutorial.Step==TutorialStep.ResumeMenu&&Session.Tutorial.Briefing;
-        private string TutorialSignature=>Session.Tutorial==null?"":Session.Tutorial.Step+":"+Session.Tutorial.Briefing+":"+Session.Tutorial.AcceptedOrderCount+":"+Session.Tutorial.WheelExplored+":"+(TutorialWheel!=null&&TutorialWheel.IsOpen)+":"+Session.AttackMoveMode+":"+Localization.Code+":"+Bindings.ToJson();
+        private string TutorialSignature=>Session.Tutorial==null?"":Session.Tutorial.Step+":"+Session.Tutorial.Briefing+":"+Session.Tutorial.AcceptedOrderCount+":"+Session.AttackMoveMode+":"+Localization.Code+":"+Bindings.ToJson();
 
         private void CreateTutorialCard()
         {
@@ -188,24 +186,9 @@ namespace Frontier.Runtime
                 if(!Quest.Active||Quest.TrackingSpace==null||!Quest.PointerTracked)return false;
                 position=Quest.PointerRay().origin+Quest.PointerRotation()*ControllerVisuals.ButtonPosition(Bindings.LeftHand,Bindings.Get(true,"back"));return true;
             }
-            if(tutorialCueWheel&&Quest.Active)
-            {
-                string wheelAction=tutorialCueAction=="group:0"?"group-1":tutorialCueAction;
-                if(TutorialWheel!=null&&TutorialWheel.TryTutorialTarget(wheelAction,out position))return true;
-                if(Quest.TrackingSpace!=null&&Quest.PointerTracked)
-                {
-                    if(tutorialCueAction=="back")
-                    {
-                        position=Quest.PointerRay().origin+Quest.PointerRotation()*ControllerVisuals.ButtonPosition(Bindings.LeftHand,"touch:b");return true;
-                    }
-                    var surface=ControllerVisuals.StickSurface(Quest.ActiveController==OVRInput.Controller.LTouch);
-                    position=Quest.PointerRay().origin+Quest.PointerRotation()*surface.position;return true;
-                }
-            }
             if(!string.IsNullOrEmpty(tutorialCueAction))
             {
-                var target=tutorialCueAction=="pause"?matchTargets[1]:tutorialCueAction=="group:0"?groupTargets[0]:
-                    targets.FirstOrDefault(t=>tutorialCueAction=="resume"?t.rect.name=="Resume match":tutorialCueAction=="back"?t.rect.name=="Back":t.actionId==tutorialCueAction);
+                var target=targets.FirstOrDefault(t=>tutorialCueAction=="resume"?t.rect.name=="Resume match":tutorialCueAction=="back"?t.rect.name=="Back":t.actionId==tutorialCueAction);
                 if(target!=null&&target.rect.gameObject.activeInHierarchy)
                 {
                     tutorialCueTargetRect=target.rect;

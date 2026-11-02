@@ -108,7 +108,7 @@ namespace Frontier.Runtime
                     MenuFooter("START MATCH",Quest.RequestStartMatch,536,504,true,80);
                     return true;
                 case MenuPage.Pause:
-                    MenuCard("Resume match",TutorialResumeBriefing?"Choose Continue in the floating guide first.":"Return to the battlefield.",Vector2.zero,new Vector2(1040,116),()=>Show(MenuPage.Actions),!TutorialResumeBriefing);
+                    MenuCard("Resume match","Return to the battlefield.",Vector2.zero,new Vector2(1040,116),()=>Show(MenuPage.Actions),true);
                     MenuCard("Guides","Controls, units and structures.",new Vector2(0,-132),new Vector2(512,144),()=>OpenSubmenu(MenuPage.Guides));
                     MenuCard("Settings","Controls, sound, visuals and play space.",new Vector2(528,-132),new Vector2(512,144),()=>OpenSubmenu(MenuPage.Settings));
                     MenuFooter("Return to main menu",()=>Show(MenuPage.LeaveConfirmation),0,512);

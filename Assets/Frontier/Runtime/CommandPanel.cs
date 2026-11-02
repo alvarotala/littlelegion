@@ -335,10 +335,6 @@ namespace Frontier.Runtime
         }
         private void Show(MenuPage page)
         {
-            // Keep the resume lesson beside its actual menu until the player
-            // acknowledges the explanation. Back and Space share this route.
-            if(page==MenuPage.Actions&&TutorialResumeBriefing)
-            {Session.Announce("Choose Continue in the tutorial card before resuming.");return;}
             if(moving){moving=false;SavePosition();}
             CloseSectionHelp();
             if(page==MenuPage.Main||page==MenuPage.Actions||page==MenuPage.Pause||page==MenuPage.MatchSetup||page==MenuPage.OnlineSetup||page==MenuPage.DirectSetup||page==MenuPage.Result||page==MenuPage.Replay)menuHistory.Clear();
@@ -349,7 +345,6 @@ namespace Frontier.Runtime
             if(page==MenuPage.Guide&&Page!=MenuPage.Guide)controlGuidePage=0;
             if(page!=MenuPage.MatchSetup&&page!=MenuPage.OnlineSetup&&page!=MenuPage.DirectSetup&&page!=MenuPage.Result)Quest.CancelStartRequest();
             Page=page;signature=null;moving=false;
-            if(page==MenuPage.Pause||page==MenuPage.Actions)Session.NotifyTutorialMenu(page==MenuPage.Pause);
             ApplyWindowScale();
             lastMenuMessage=Session.Message;lastMenuMessageVersion=Session.MessageVersion;menuMessageUntil=0;
             ClearSelectionGesture();
