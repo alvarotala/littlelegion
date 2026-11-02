@@ -176,27 +176,12 @@ internal static class Program
             Enter(tutorial, TutorialStep.SelectArmy); tutorial.Continue();
             Check(!session.CanSaveMobileGroup && !session.ReplaceMobileSelectionGroup(0), faction + " selection lesson cannot be skipped by saving");
             Check(session.SelectVisibleEntities(ids), faction + " real mobile selection supplies the tutorial army");
-            Check(tutorial.Step == TutorialStep.SaveGroup && tutorial.Briefing && !session.CanSaveMobileGroup, faction + " real tutorial reaches group briefing");
-            tutorial.Continue();
-            Check(session.CanSaveMobileGroup && !session.ReplaceMobileSelectionGroup(1), faction + " save lesson only allows slot zero");
-            Check(!session.RecallMobileGroup(0), faction + " recall cannot satisfy save lesson");
-            Check(session.SaveMobileSelectionGroup() == 0 && session.GroupSize(0) == GuidedTutorial.ArmySize, faction + " mobile save invokes shared group storage");
-            Check(tutorial.Step == TutorialStep.RecallGroup && tutorial.Briefing && session.Selection.Count == 0, faction + " successful save advances real tutorial and clears selection for recall practice");
-            Check(!session.RecallMobileGroup(0), faction + " recall waits for briefing continuation");
+            Check(tutorial.Step == TutorialStep.AttackMove && tutorial.Briefing, faction + " simplified tutorial advances directly to attack move");
             tutorial.Continue(); Target(session);
-            Check(!session.RecallMobileGroup(1) && session.HasTargetingMode, faction + " tutorial rejects other group slots without cancelling targeting");
-            Check(session.RecallMobileGroup(0) && session.Selection.SetEquals(ids) && !session.HasTargetingMode, faction + " correct recall restores army and cancels targeting");
-            Check(tutorial.Step == TutorialStep.AttackMove && tutorial.Briefing, faction + " real recall notification advances to attack-move lesson");
-
-            // A wrong-sized first save must be explicitly replaceable; merely
-            // selecting the right army later cannot repair its tutorial event.
-            var partialGuide = new GuidedTutorial(sim, true); Enter(partialGuide, TutorialStep.SaveGroup); partialGuide.Continue();
-            var partial = new GameSession { Catalog = catalog, View = sim.View(0), Tutorial = partialGuide };
-            Select(partial, ids.Take(2).ToArray());
-            Check(partial.SaveMobileSelectionGroup() == 0 && partialGuide.Step == TutorialStep.SaveGroup, faction + " partial army save does not finish the lesson");
-            Select(partial, ids);
-            Check(partial.SaveMobileSelectionGroup() == -1 && partial.GroupSize(0) == 2, faction + " occupied tutorial slot requires explicit replacement");
-            Check(partial.ReplaceMobileSelectionGroup(0) && partialGuide.Step == TutorialStep.RecallGroup, faction + " explicit corrected save completes the actual tutorial objective");
+            Check(!session.CanSaveMobileGroup && session.SaveMobileSelectionGroup() == -1, faction + " tutorial rejects group creation during active lessons");
+            Check(!session.ReplaceMobileSelectionGroup(0) && !session.RecallMobileGroup(0) && session.HasTargetingMode, faction + " rejected group actions preserve targeting");
+            session.Group(0,true);
+            Check(session.GroupSize(0) == 0 && session.TutorialRejects > 0, faction + " shared group API rejects tutorial saves");
         }
     }
 

@@ -10,7 +10,7 @@ using UnityEngine.UI;
 
 namespace Frontier.Editor
 {
-    // Drives the production session, panel hit targets and Touch wheel router. No
+    // Drives the production session and real console hit targets on desktop/Touch. No
     // tutorial state, resources, health or entity positions are changed by tests.
     public static class GuidedTutorialPreview
     {
@@ -97,7 +97,6 @@ namespace Frontier.Editor
                         f.Panel.Bindings.SelectHand(true);
                         f.Check(f.Panel.Bindings.Assign(false, "select", "mouse:middle", false, out _), "Desktop selection remap accepted");
                         f.Check(f.Panel.Bindings.Assign(false, "order", "key:Q", false, out _), "Desktop order remap accepted");
-                        f.Check(f.Panel.Bindings.Assign(false, "group1", "key:G", false, out _), "Desktop group remap accepted");
                         f.Check(f.Panel.Bindings.Assign(true, "select", "touch:a", true, out _), "Touch selection/order swap accepted");
                     }
                     Refresh(); Capture("01-main");
@@ -136,12 +135,6 @@ namespace Frontier.Editor
                             s.Pause("tracking", true); s.ContinueTutorial();
                             f.Check(lesson.Briefing && lesson.Step == step, step + ": tracking interruption cannot dismiss a lesson");
                             s.Pause("tracking", false);
-                            if (step == TutorialStep.ResumeMenu)
-                            {
-                                f.Panel.Back(); f.Panel.ToggleMenu(); Click("Resume match");
-                                f.Check(f.Panel.Page == CommandPanel.MenuPage.Pause && lesson.Briefing && lesson.Step == step,
-                                    "Back, ToggleMenu and Resume retain the resume briefing until Continue is pressed");
-                            }
                             Click("Continue tutorial");
                             if (step == TutorialStep.Welcome) continue;
                             f.Check(!lesson.Briefing && !s.HasSystemPause, step + ": Continue arms the current objective");
@@ -171,7 +164,6 @@ namespace Frontier.Editor
                                 f.Check(lesson.Step == step && !lesson.Briefing, "Movement waits for arrival rather than command submission");
                                 Pump(step); break;
                             case TutorialStep.GatherMinerals:
-                            case TutorialStep.GatherGas:
                                 s.Select(lesson.FocusEntity, false);
                                 f.Check(s.Context(lesson.FocusPoint.Value, 0, lesson.FocusResource) > 0, step + ": contextual gather command accepted");
                                 f.Check(lesson.Step == step, step + ": collection waits for the completed return trip");
@@ -184,40 +176,8 @@ namespace Frontier.Editor
                                 f.Check(s.Tutorial.AcceptedOrderCount == 1, "Worker enters the ordinary production queue through its menu button");
                                 f.Check(lesson.Step == step && !s.Send(CommandKind.Train, definition: lesson.ExpectedDefinition), "Worker objective waits for deployment and blocks duplicate training");
                                 Pump(step); break;
-                            case TutorialStep.OpenMenu:
-                                CheckCue(action: "pause");
-                                f.Panel.ToggleMenu(); Refresh(); Capture("03-pause");
-                                f.Check(f.Panel.Page == CommandPanel.MenuPage.Pause && s.IsPaused && lesson.Step == TutorialStep.ResumeMenu,
-                                    "Real in-game menu advances to its paused resume lesson"); break;
-                            case TutorialStep.ResumeMenu:
-                                CheckCue(action: "resume");
-                                if (touch) f.Panel.Back(); else f.Panel.ToggleMenu();
-                                Refresh();
-                                f.Check(f.Panel.Page == CommandPanel.MenuPage.Actions && lesson.Step != step, "Real Back/ToggleMenu resumes the guided flow"); break;
-                            case TutorialStep.OpenWheel:
-                                s.Select(lesson.FocusEntity, false);
-                                f.Drain(); f.Frame(Vector2.right); Refresh();
-                                f.Check(lesson.Step == step && lesson.WheelExplored && f.Wheel.IsOpen && s.CanIssueOrders,
-                                    "Opening the selection wheel keeps its lesson active so the player can explore");
-                                f.Frame(); f.Frame(elapsed: ActionWheel.NeutralCloseDelay + 2); Refresh();
-                                f.Check(lesson.Step == step && f.Wheel.IsOpen,
-                                    "The first wheel lesson remains visible while the stick rests at neutral");
-                                f.Wheel.Close(); Refresh();
-                                f.Check(lesson.Step == step, "An involuntary wheel close does not complete its lesson");
-                                var reopenedInstruction=UnifiedWheelFixture.Field<Text>(f.Panel,"tutorialInstruction") as LocalizedText;
-                                f.Check(reopenedInstruction.Source=="Tilt the "+f.Panel.Bindings.HandName.ToLowerInvariant()+" stick right. That's your action wheel!",
-                                    "An involuntary wheel close restores the instruction to open it before continuing");
-                                f.Drain(); f.Frame(Vector2.right); Refresh();
-                                f.Frame(b: true); Refresh();
-                                f.Check(lesson.Step == step && f.Wheel.IsOpen && f.Wheel.Page == WheelPage.Root,
-                                    "Back still returns from the selection category to the wheel root during teaching");
-                                f.Frame(b: true); Refresh();
-                                f.Check(lesson.Step == TutorialStep.BuildSupply && lesson.Briefing && !f.Wheel.IsOpen,
-                                    "Deliberately closing the explored wheel starts the next briefing");
-                                f.Drain(); break;
                             case TutorialStep.BuildSupply:
                             case TutorialStep.BuildBarracks:
-                            case TutorialStep.BuildExtractor:
                                 s.Select(0, false); CheckCue(entity: lesson.FocusEntity);
                                 s.Select(lesson.FocusEntity, false);
                                 CheckCue(action: "build:" + lesson.ExpectedDefinition);
@@ -230,12 +190,12 @@ namespace Frontier.Editor
                                     CheckCue(action: "build:" + lesson.ExpectedDefinition);
                                     if (touch)
                                     {
-                                        f.OpenGroups(); Refresh();
-                                        f.Check(UnifiedWheelFixture.Field<string>(f.Panel, "tutorialCueAction") == "back",
-                                            "Opening the wrong wheel category first teaches Back instead of an unavailable building action");
-                                        InstructionContains(f.Panel.Bindings.MenuBackName);
-                                        f.Frame(b: true); Refresh(); CheckWheelCue("selection-menu");
-                                        f.Dismiss(); Refresh(); CheckCue(action: "build:" + lesson.ExpectedDefinition);
+                                        f.Drain(); f.Frame(Vector2.right); Refresh();
+                                        f.Check(!f.Wheel.CanOpen && !f.Wheel.IsOpen && lesson.Step == step,
+                                            "The basic tutorial keeps the wheel closed and uses console commands");
+                                        CheckCue(action: "build:" + lesson.ExpectedDefinition);
+                                        InstructionContains(f.Panel.Bindings.MenuConfirmName);
+                                        f.Drain();
                                     }
                                 }
                                 if (step == TutorialStep.BuildSupply) CaptureScene("09-scene-build-option");
@@ -267,26 +227,12 @@ namespace Frontier.Editor
                                 f.Check(!s.Send(CommandKind.Train, definition: lesson.ExpectedDefinition), "The guided army size cannot be exceeded");
                                 Pump(step); break;
                             case TutorialStep.SelectArmy:
-                                f.Check(s.SelectArmy(), "Army quick selection uses the production session action"); break;
-                            case TutorialStep.SaveGroup:
-                                CheckCue(action: "group:0"); CaptureScene("10-scene-control-group");
-                                if (touch)
-                                {
-                                    f.OpenGroups(); CheckWheelCue("group-1"); f.Frame(Vector2.up, press: true); f.Frame(clickUp: true); f.Drain();
-                                }
-                                else s.Group(0, true);
-                                f.Check(s.GroupSize(0) == GuidedTutorial.ArmySize && lesson.Step == TutorialStep.RecallGroup,
-                                    "Saving the army uses the actual control group action"); break;
-                            case TutorialStep.RecallGroup:
-                                s.Select(0, false);
-                                CheckCue(action: "group:0");
-                                if (touch)
-                                {
-                                    f.OpenGroups(); CheckWheelCue("group-1"); f.Frame(Vector2.up, down: true, held: true); f.Frame(up: true); f.Drain();
-                                }
-                                else s.Group(0, false);
-                                f.Check(s.Selection.Count == GuidedTutorial.ArmySize && lesson.Step == TutorialStep.AttackMove,
-                                    "Recalling group 1 restores the army after clearing selection"); break;
+                                var soldiers = s.View.entities.Where(e => e.owner == 0 && s.Catalog[e.definition].role == "ranged").ToArray();
+                                s.SelectRectangle(new Point(soldiers.Min(e => e.position.x) - .1f, soldiers.Min(e => e.position.y) - .1f),
+                                    new Point(soldiers.Max(e => e.position.x) + .1f, soldiers.Max(e => e.position.y) + .1f), false);
+                                f.Check(s.Selection.Count == GuidedTutorial.ArmySize, "A map rectangle selects the three soldiers without a group shortcut");
+                                s.Group(0, true);
+                                f.Check(s.GroupSize(0) == 0, "Control groups stay outside the basic tutorial"); break;
                             case TutorialStep.AttackMove:
                             case TutorialStep.DestroyEnemy:
                                 CheckCue(action: "attack-move"); ClickAction("attack-move");
@@ -301,8 +247,10 @@ namespace Frontier.Editor
                     }
                     f.Check(s.Tutorial.Complete && s.Match.Winner == 0 && s.IsPaused && !s.HasSystemPause,
                         "The lesson completes only after ordinary combat destroys the enemy and records victory");
-                    f.Check(seen.Count == (touch ? 19 : 18) && seen.Contains(TutorialStep.OpenWheel) == touch,
-                        "The entire lesson is visited; desktop omits only the controller wheel exercise");
+                    f.Check(s.Tutorial.StepCount == 13 && seen.Count == 12,
+                        "Desktop and Touch finish the same basic route without wheel, menu, gas or group lessons");
+                    f.Check(s.View.catalyst == 0 && !s.Match.HasRole(0, "extractor"),
+                        "The basic route wins without extracting or spending gas");
                     f.Check(f.Panel.Page == CommandPanel.MenuPage.Actions && store.List().Length == 0 && !s.IsOnline,
                         "Tutorial completion keeps its own UI and creates no ordinary match history or online session");
                     UnifiedWheelFixture.Call(f.Board, "LateUpdate");
@@ -318,14 +266,14 @@ namespace Frontier.Editor
                         Click("Tutorial main menu");
                         f.Check(!s.IsTutorial && !s.Running && !s.IsPaused && ReferenceEquals(s.Map, setup),
                             "Victory Main menu button restores skirmish setup without a residual pause");
-                        s.StartTutorial(touch); s.RestartTutorial();
+                        s.StartTutorial(); s.RestartTutorial();
                     }
                     f.Check(s.IsTutorial && s.Tutorial.Step == TutorialStep.Welcome && s.Match.Tick == 0 && s.Selection.Count == 0 && s.GroupSize(0) == 0,
                         "Repeat starts a clean tutorial with no retained selection or groups");
                     s.Pause("tracking", true); s.LeaveMatch();
                     f.Check(!s.IsTutorial && !s.Running && s.HasSystemPause && ReferenceEquals(s.Map, setup) && s.MapId == "desert"
                         && s.Faction == setupFaction && s.EnemyFaction == setupEnemy && s.Difficulty == "hard", "Leaving restores the exact skirmish setup and retains tracking pause");
-                    s.Pause("tracking", false); s.StartTutorial(touch); Refresh();
+                    s.Pause("tracking", false); s.StartTutorial(); Refresh();
                     f.Panel.ToggleMenu(); Refresh(); Click("Return to main menu"); Click("Leave match");
                     f.Check(!s.IsTutorial && !s.Running && !s.IsPaused && f.Panel.Page == CommandPanel.MenuPage.Main && store.List().Length == 0,
                         "Pause-menu exit closes the tutorial cleanly without recording a match");
@@ -335,6 +283,7 @@ namespace Frontier.Editor
                         "Ordinary skirmish starts normally and still records history after a tutorial");
                     f.Check(Mathf.Abs(UnifiedWheelFixture.Field<RectTransform>(f.Panel, "root").rect.height - emptyTutorialHudHeight) < .1f,
                         "The floating tutorial adds no height to the ordinary empty-selection console");
+                    f.Check(f.Wheel.CanOpen, "The wheel remains available in ordinary matches after the tutorial");
                     f.Check(s.Send(CommandKind.Surrender), "Ordinary skirmish commands are no longer tutorial-gated");
                     s.LeaveMatch();
                     f.Report("GUIDED_TUTORIAL_" + prefix.ToUpperInvariant());
@@ -368,7 +317,9 @@ namespace Frontier.Editor
                     }
                     void ClickAction(string id)
                     {
-                        Refresh(); var target = ActionTarget(id);
+                        Refresh();
+                        if (touch) InstructionContains(f.Panel.Bindings.MenuConfirmName);
+                        var target = ActionTarget(id);
                         var center = target.TransformPoint(target.rect.center); var ray = new Ray(center - target.forward * .6f, target.forward);
                         f.Check(f.Panel.Point(ray, true, false) && f.Panel.Point(ray, false, true), "Real console pointer activates " + id);
                         Refresh();
@@ -431,6 +382,16 @@ namespace Frontier.Editor
                             float angularScale=card.lossyScale.y/console.lossyScale.y
                                 *eye.InverseTransformPoint(console.position).z/eye.InverseTransformPoint(card.position).z;
                             f.Check(angularScale>1.15f,"Map instructions appear larger even after compensating for distance");
+                            f.Check(eye.InverseTransformPoint(card.position).z>eye.InverseTransformPoint(destination).z+.2f,
+                                "Map instructions sit behind their objective from the player's viewpoint");
+                            var corners=new Vector3[4];card.GetWorldCorners(corners);
+                            var projected=corners.Select(f.Quest.Camera.WorldToViewportPoint).ToArray();
+                            var targetPoint=f.Quest.Camera.WorldToViewportPoint(destination);
+                            f.Check(projected.Min(p=>p.y)>targetPoint.y+.015f,
+                                "The whole map guide leaves a clear screen-space gap above its objective");
+                            object[] targetHit={card,new Ray(eye.position,destination-eye.position),0f};
+                            f.Check(!(bool)typeof(CommandPanel).GetMethod("Hit",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static).Invoke(null,targetHit),
+                                "Pointing at the map objective never hits the floating guide");
                         }
                         int attention=UnifiedWheelFixture.Field<int>(f.Panel,"tutorialAttentionChanges");Refresh();
                         f.Check(UnifiedWheelFixture.Field<int>(f.Panel,"tutorialAttentionChanges")==attention,
@@ -467,17 +428,6 @@ namespace Frontier.Editor
                         s.Pause("tracking", true); Refresh();
                         f.Check(!connector.enabled || !connector.gameObject.activeInHierarchy, "A tracking interruption hides the floating connector");
                         s.Pause("tracking", false); Refresh();
-                    }
-                    void CheckWheelCue(string id)
-                    {
-                        Refresh();
-                        f.Check(f.Wheel.TryTutorialTarget(id, out var target), "The open wheel exposes its real target sector " + id);
-                        var connector = UnifiedWheelFixture.Field<LineRenderer>(f.Panel, "tutorialConnector");
-                        f.Check(connector.gameObject.activeInHierarchy && Vector3.Distance(connector.GetPosition(connector.positionCount - 1), target) < .001f,
-                            "The tutorial connector follows the open wheel sector rather than its console shortcut");
-                        UnifiedWheelFixture.Call(f.Board, "LateUpdate");
-                        f.Check(!f.Board.Content.Find("Tutorial objective marker").gameObject.activeSelf,
-                            "A wheel cue hides stale map markers");
                     }
                     void Pump(TutorialStep before, int limit = 180 * Simulation.TickRate)
                     {

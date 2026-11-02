@@ -25,9 +25,7 @@ namespace Frontier.Runtime
         private const float MobileActionHeight=88;
         private const float MobileCameraFooterHeight=72;
         private const string MobileGroupReplaceMessage="All four groups are occupied. Tap a group icon to replace it, or Cancel.";
-        private const string MobileTutorialGroupReplaceMessage="Group 1 already contains a squad. Tap group 1 to replace it with your selected soldiers, or Cancel.";
-        private string MobileGroupReplacementPrompt=>Session.IsTutorial&&Session.Tutorial.Step==TutorialStep.SaveGroup
-            ?MobileTutorialGroupReplaceMessage:MobileGroupReplaceMessage;
+        private string MobileGroupReplacementPrompt=>MobileGroupReplaceMessage;
         private bool IsMobileMenu=>Page==MenuPage.Main||Page==MenuPage.MatchSetup||Page==MenuPage.Pause
             ||Page==MenuPage.Settings||Page==MenuPage.LeaveConfirmation||Page==MenuPage.Guide||Page==MenuPage.Guides
             ||Page==MenuPage.OnlineSetup||Page==MenuPage.OnlineConnection||Page==MenuPage.DirectSetup||Page==MenuPage.Ranking;

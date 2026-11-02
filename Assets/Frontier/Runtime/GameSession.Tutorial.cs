@@ -8,20 +8,19 @@ namespace Frontier.Runtime
         public bool IsTutorial => Tutorial != null;
         private MapDefinition tutorialSetupMap;
         private string tutorialSetupMapId;
-        private bool tutorialTouch;
 
         // A separate, local lesson: no strategist, no recording and no change to
         // the player's skirmish setup or the shared simulation rules.
-        public void StartTutorial(bool touch = false, bool countdown = false)
+        public void StartTutorial(bool countdown = false)
         {
             if (IsReplay) StopReplay();
             if (Running) LeaveMatch();
             DisconnectOnline();
             CloseArchive();
-            tutorialSetupMap = Map; tutorialSetupMapId = MapId; tutorialTouch = touch;
+            tutorialSetupMap = Map; tutorialSetupMapId = MapId;
             LoadMap("training");
             Match = new Simulation(Map, Catalog, Faction, EnemyFaction);
-            Tutorial = new GuidedTutorial(Match, touch);
+            Tutorial = new GuidedTutorial(Match);
             bot = null; LastClosedWasReplay = false;
             ArchiveStatus = null; ArchiveFailed = false;
             Match.Notice += (player, message) => { if (player == 0) Announce(message); };
@@ -39,7 +38,7 @@ namespace Frontier.Runtime
         public void RestartTutorial()
         {
             if (!IsTutorial) return;
-            StartTutorial(tutorialTouch);
+            StartTutorial();
         }
 
         public void ContinueTutorial()
@@ -47,18 +46,6 @@ namespace Frontier.Runtime
             if (!IsTutorial || HasSystemPause || IsCountingDown || pauseReasons.Contains("placement")) return;
             Tutorial.Continue();
             SynchronizeTutorial(); Changed?.Invoke();
-        }
-
-        public void NotifyTutorialMenu(bool open)
-        {
-            if (!IsTutorial || HasSystemPause || IsCountingDown) return;
-            Tutorial.NotifyMenu(open); SynchronizeTutorial();
-        }
-
-        public void NotifyTutorialWheel(bool open = true)
-        {
-            if (!IsTutorial || !CanIssueOrders) return;
-            Tutorial.NotifyWheel(open); SynchronizeTutorial(); Changed?.Invoke();
         }
 
         private void UpdateTutorial()
@@ -103,9 +90,7 @@ namespace Frontier.Runtime
             if (Tutorial.Briefing || Tutorial.Complete) return false;
             switch (Tutorial.Step)
             {
-                // Let the learner inspect the wheel before choosing a blueprint.
-                case TutorialStep.OpenWheel: return action.Category == ActionCategory.Build;
-                case TutorialStep.BuildSupply: case TutorialStep.BuildBarracks: case TutorialStep.BuildExtractor:
+                case TutorialStep.BuildSupply: case TutorialStep.BuildBarracks:
                     return action.Id == "build:" + Tutorial.ExpectedDefinition;
                 case TutorialStep.TrainWorker: case TutorialStep.TrainArmy:
                     return action.Id == "train:" + Tutorial.ExpectedDefinition;
@@ -116,7 +101,7 @@ namespace Frontier.Runtime
         }
 
         private bool TutorialCanChooseBuild(string definition) => !IsTutorial || !Tutorial.Briefing
-            && (Tutorial.Step == TutorialStep.BuildSupply || Tutorial.Step == TutorialStep.BuildBarracks || Tutorial.Step == TutorialStep.BuildExtractor)
+            && (Tutorial.Step == TutorialStep.BuildSupply || Tutorial.Step == TutorialStep.BuildBarracks)
             && definition == Tutorial.ExpectedDefinition;
 
         private bool TutorialCanChooseAttack => !IsTutorial || !Tutorial.Briefing

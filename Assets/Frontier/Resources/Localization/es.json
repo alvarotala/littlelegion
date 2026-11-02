@@ -9906,6 +9906,21 @@
       "key": "Use your server computer's LAN address. 127.0.0.1 refers to this device.",
       "value": "Usa la dirección LAN del equipo servidor. 127.0.0.1 se refiere a este dispositivo.",
       "template": false
+    },
+    {
+      "key": "Choose {0} in the console once with Trigger / {1}.",
+      "value": "Elige {0} una vez en el menú con el gatillo / {1}.",
+      "template": true
+    },
+    {
+      "key": "Choose {0} in the console {1} times with Trigger / {2}.",
+      "value": "Elige {0} {1} veces en el menú con el gatillo / {2}.",
+      "template": true
+    },
+    {
+      "key": "Choose Attack Move in the console with Trigger / {0}.",
+      "value": "Elige Avanzar y atacar en el menú con el gatillo / {0}.",
+      "template": true
     }
   ]
 }

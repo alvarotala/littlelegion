@@ -10,7 +10,7 @@ namespace Frontier.Runtime
         // Group membership is still owned by the shared session. Touch only adds
         // an explicit create/replace flow, without silently discarding a slot.
         public bool CanSaveMobileGroup=>CanIssueOrders&&Selection.Count>0&&Selection.All(OwnGroupMember)
-            &&(!IsTutorial||Tutorial.Step==TutorialStep.SaveGroup);
+            &&!IsTutorial;
 
         public int SaveMobileSelectionGroup()
         {
@@ -39,7 +39,7 @@ namespace Frontier.Runtime
         public bool RecallMobileGroup(int slot)
         {
             if(!CanIssueOrders||slot<0||slot>=groups.Length||GroupSize(slot)==0
-                ||IsTutorial&&(slot!=0||Tutorial.Step!=TutorialStep.RecallGroup))return false;
+                ||IsTutorial)return false;
             CancelMode();
             Group(slot,false);
             return true;

@@ -5,7 +5,7 @@ namespace Frontier.Runtime
 {
     public sealed partial class CommandPanel
     {
-        private enum TutorialFocus { Briefing, Map, Menu, Wheel }
+        private enum TutorialFocus { Briefing, Map, Menu }
         private TutorialFocus tutorialFocus;
         private Image tutorialMenuDim;
         private string tutorialAttentionState;
@@ -40,7 +40,7 @@ namespace Frontier.Runtime
 #else
             var lesson=Session.Tutorial;var camera=Quest.Camera;
             tutorialFocus=lesson.Briefing||lesson.Complete?TutorialFocus.Briefing:
-                tutorialCueTargetRect!=null?TutorialFocus.Menu:tutorialCueWheel?TutorialFocus.Wheel:
+                tutorialCueTargetRect!=null?TutorialFocus.Menu:
                 connected&&string.IsNullOrEmpty(tutorialCueAction)?TutorialFocus.Map:TutorialFocus.Menu;
             bool map=tutorialFocus==TutorialFocus.Map;
             var desiredScale=root.localScale*(map?1.28f:1f);
@@ -71,16 +71,23 @@ namespace Frontier.Runtime
             {
                 // Compensate for distance: near the board the guide must also
                 // look larger, rather than shrinking as it moves farther away.
-                float depth=Mathf.Clamp(camera.transform.InverseTransformPoint(destination).z-.12f,.65f,2.5f);
+                float depth=Mathf.Max(.65f,camera.transform.InverseTransformPoint(destination).z+.24f);
                 float consoleDepth=Mathf.Max(.65f,camera.transform.InverseTransformPoint(root.position).z);
                 desiredScale*=depth/consoleDepth;
                 float height=tutorialCard.rect.height*desiredScale.y*tutorialCard.parent.lossyScale.y;
-                desiredPosition=destination+camera.transform.up*(height*.5f+.065f)-camera.transform.forward*.12f;
+                var target=camera.transform.InverseTransformPoint(destination);
+                float projection=camera.orthographic?1:depth/Mathf.Max(.001f,target.z);
+                desiredPosition=camera.transform.TransformPoint(new Vector3(target.x*projection,target.y*projection+height*.5f+.08f,depth));
                 desiredRotation=camera.transform.rotation;
             }
-            if(camera!=null)KeepTutorialInView(camera,ref desiredPosition,ref desiredScale);
+            if(camera!=null)
+            {
+                float depth=map?Mathf.Max(2.5f,camera.transform.InverseTransformPoint(destination).z+.24f):2.5f;
+                KeepTutorialInView(camera,ref desiredPosition,ref desiredScale,depth);
+                if(map)ClearTutorialMapTarget(camera,destination,ref desiredPosition,ref desiredScale);
+            }
 
-            string state=lesson.Step+":"+lesson.Briefing+":"+lesson.AcceptedOrderCount+":"+lesson.WheelExplored+":"+tutorialFocus
+            string state=lesson.Step+":"+lesson.Briefing+":"+lesson.AcceptedOrderCount+":"+tutorialFocus
                 +":"+tutorialCueAction+":"+tutorialCueEntity+":"+tutorialCueResource+":"+Session.BuildDefinition+":"+Session.AttackMoveMode;
             if(state!=tutorialAttentionState)
             {
@@ -93,7 +100,7 @@ namespace Frontier.Runtime
             }
             float pulse=Application.isPlaying?Mathf.Sin(Mathf.PI*Mathf.Clamp01((Time.unscaledTime-tutorialAttentionTime)/.4f)):0;
             desiredScale*=1+pulse*.035f;
-            float blend=tutorialPositionReady&&Application.isPlaying?1-Mathf.Exp(-Time.unscaledDeltaTime*14):1;
+            float blend=!map&&tutorialPositionReady&&Application.isPlaying?1-Mathf.Exp(-Time.unscaledDeltaTime*14):1;
             tutorialCard.SetPositionAndRotation(Vector3.Lerp(tutorialCard.position,desiredPosition,blend),Quaternion.Slerp(tutorialCard.rotation,desiredRotation,blend));
             tutorialCard.localScale=Vector3.Lerp(tutorialCard.localScale,desiredScale,blend);
             tutorialPositionReady=true;
@@ -106,10 +113,27 @@ namespace Frontier.Runtime
 #endif
         }
 
-        private void KeepTutorialInView(Camera camera,ref Vector3 position,ref Vector3 scale)
+        private void ClearTutorialMapTarget(Camera camera,Vector3 destination,ref Vector3 position,ref Vector3 scale)
+        {
+            // Frustum clamping must never push the instruction back over its target.
+            // Keep a clear pointing lane and put the whole card beyond it in depth.
+            var local=camera.transform.InverseTransformPoint(position);
+            var target=camera.transform.InverseTransformPoint(destination);
+            float vertical=camera.orthographic?camera.orthographicSize:local.z*Mathf.Tan(camera.fieldOfView*Mathf.Deg2Rad*.5f);
+            float targetY=target.y*(camera.orthographic?1:local.z/Mathf.Max(.001f,target.z));
+            float margin=vertical*.08f,edge=vertical*.92f;
+            float space=Mathf.Max(.001f,edge-targetY-margin);
+            float height=tutorialCard.rect.height*scale.y*tutorialCard.parent.lossyScale.y;
+            scale*=Mathf.Min(1,space/Mathf.Max(.001f,height));
+            height=tutorialCard.rect.height*scale.y*tutorialCard.parent.lossyScale.y;
+            local.y=targetY+margin+height*.5f;
+            position=camera.transform.TransformPoint(local);
+        }
+
+        private void KeepTutorialInView(Camera camera,ref Vector3 position,ref Vector3 scale,float maximumDepth=2.5f)
         {
             var local=camera.transform.InverseTransformPoint(position);
-            local.z=Mathf.Clamp(local.z,.65f,2.5f);
+            local.z=Mathf.Clamp(local.z,.65f,maximumDepth);
             float vertical=camera.orthographic?camera.orthographicSize:local.z*Mathf.Tan(camera.fieldOfView*Mathf.Deg2Rad*.5f);
             float horizontal=vertical*camera.aspect;
             var parentScale=tutorialCard.parent.lossyScale;

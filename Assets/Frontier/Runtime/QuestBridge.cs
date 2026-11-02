@@ -181,7 +181,7 @@ namespace Frontier.Runtime
         private void CompleteStartRequest()
         {
             string replay=pendingReplay;bool online=pendingOnline,publicMatch=pendingPublicMatch,tutorial=pendingTutorial;CancelStartRequest();
-            if(replay!=null)Session.StartReplay(replay);else if(publicMatch)_=Session.FindPublicMatchAsync();else if(online)Session.ConnectOnline();else if(tutorial)Session.StartTutorial(Active,countdown:true);else Session.StartMatch(countdown:true);
+            if(replay!=null)Session.StartReplay(replay);else if(publicMatch)_=Session.FindPublicMatchAsync();else if(online)Session.ConnectOnline();else if(tutorial)Session.StartTutorial(countdown:true);else Session.StartMatch(countdown:true);
         }
         private void ContinueStartRequest()
         {

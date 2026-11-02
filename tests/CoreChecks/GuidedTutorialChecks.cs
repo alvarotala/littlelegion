@@ -5,11 +5,10 @@ static class GuidedTutorialChecks
     public static void Run(Catalog catalog, MapDefinition map, Action<bool, string> check)
     {
         foreach (string faction in new[] { "industrial", "biological" })
-        foreach (bool touch in new[] { false, true })
         {
-            string label = faction + (touch ? " Touch" : " desktop");
+            string label = faction;
             var sim = new Simulation(map, catalog, faction, faction == "industrial" ? "biological" : "industrial");
-            var guide = new GuidedTutorial(sim, touch);
+            var guide = new GuidedTutorial(sim);
             int[] selected = Array.Empty<int>();
             var seen = new HashSet<TutorialStep>();
             var issued = new HashSet<TutorialStep>();
@@ -18,7 +17,6 @@ static class GuidedTutorialChecks
                 label + ": tutorial construction preserves ordinary match rules and opening state");
             var initialOrders = sim.Entities.Values.Select(e => e.order).ToArray();
             guide.Observe(new[] { Own("worker").id });
-            guide.NotifyMenu(true); guide.NotifyWheel(); guide.NotifyGroup(0, true);
             check(guide.Step == TutorialStep.Welcome && guide.Briefing && sim.Tick == 0
                 && sim.Entities.Values.Select(e => e.order).SequenceEqual(initialOrders),
                 label + ": briefing ignores early controls and does not advance or mutate simulation");
@@ -47,7 +45,7 @@ static class GuidedTutorialChecks
                             selected = new[] { guide.FocusEntity };
                             Send(CommandKind.Move, guide.FocusPoint.Value);
                             break;
-                        case TutorialStep.GatherMinerals: case TutorialStep.GatherGas:
+                        case TutorialStep.GatherMinerals:
                             selected = new[] { guide.FocusEntity };
                             Send(CommandKind.Gather, target: guide.FocusResource);
                             guide.Observe(selected);
@@ -67,31 +65,10 @@ static class GuidedTutorialChecks
                             Send(CommandKind.Train, definition: guide.ExpectedDefinition);
                             check(!guide.Allows(Command(CommandKind.Train, definition: guide.ExpectedDefinition)), label + ": worker lesson limits production to one worker");
                             break;
-                        case TutorialStep.OpenMenu:
-                            guide.NotifyMenu(false);
-                            check(guide.Step == step, label + ": closing an unopened menu cannot satisfy opening it");
-                            guide.NotifyMenu(true);
-                            break;
-                        case TutorialStep.ResumeMenu: guide.NotifyMenu(false); break;
-                        case TutorialStep.OpenWheel:
-                            guide.NotifyWheel(false);
-                            check(guide.Step == step && !guide.WheelExplored, label + ": closing an unseen wheel cannot skip its lesson");
-                            guide.NotifyWheel();
-                            check(guide.Step == step && !guide.Briefing && guide.WheelExplored,
-                                label + ": opening the selection wheel leaves time to read and explore it");
-                            guide.Observe(selected);
-                            check(guide.Step == step, label + ": observing an open wheel never advances the lesson automatically");
-                            guide.NotifyWheel(false);
-                            check(guide.Step == TutorialStep.BuildSupply && guide.Briefing && !guide.WheelExplored,
-                                label + ": deliberate wheel dismissal starts the following briefing");
-                            break;
-                        case TutorialStep.BuildSupply: case TutorialStep.BuildBarracks: case TutorialStep.BuildExtractor:
+                        case TutorialStep.BuildSupply: case TutorialStep.BuildBarracks:
                             selected = new[] { Own("worker").id };
                             Point point = guide.FocusPoint.Value;
-                            int size = catalog[guide.ExpectedDefinition].footprint;
-                            var origin = step == TutorialStep.BuildExtractor
-                                ? new Point((float)Math.Floor(point.x - size * .5f), (float)Math.Floor(point.y - size * .5f))
-                                : new Point((float)Math.Floor(point.x), (float)Math.Floor(point.y));
+                            var origin = new Point((float)Math.Floor(point.x), (float)Math.Floor(point.y));
                             check(!guide.Allows(Command(CommandKind.Build, new Point(origin.x + 1, origin.y), definition: guide.ExpectedDefinition)),
                                 label + ": " + step + " requires the marked foundation");
                             Send(CommandKind.Build, origin, definition: guide.ExpectedDefinition);
@@ -106,23 +83,6 @@ static class GuidedTutorialChecks
                             selected = Army();
                             guide.Observe(selected.Take(2));
                             check(guide.Step == step, label + ": partial army selection does not skip selection practice");
-                            break;
-                        case TutorialStep.SaveGroup:
-                            guide.NotifyGroup(1, true); guide.Observe(selected);
-                            check(guide.Step == step, label + ": tutorial practices the first group specifically");
-                            guide.NotifyGroup(0, true); guide.Observe(selected.Take(2)); guide.Observe(selected);
-                            check(guide.Step == step, label + ": a partial saved group must be saved again after correcting selection");
-                            guide.NotifyGroup(0, true);
-                            break;
-                        case TutorialStep.RecallGroup:
-                            selected = Array.Empty<int>(); guide.Observe(selected);
-                            check(guide.Step == step, label + ": recall requires a real recall event and army selection");
-                            guide.NotifyGroup(0, false); guide.Observe(selected);
-                            check(guide.Step == step, label + ": an empty recalled group cannot satisfy the objective");
-                            selected = Army();
-                            guide.Observe(selected);
-                            check(guide.Step == step, label + ": manual selection cannot retroactively satisfy a failed recall");
-                            guide.NotifyGroup(0, false);
                             break;
                         case TutorialStep.AttackMove:
                             Send(CommandKind.AttackMove, guide.FocusPoint.Value);
@@ -142,9 +102,9 @@ static class GuidedTutorialChecks
             }
             check(guide.Complete && !guide.AdvanceSimulation && sim.Winner == 0 && sim.Buildings(1) == 0 && guide.Progress == 1,
                 label + ": complete guided route wins through ordinary combat without bots or stat changes");
-            check(seen.Contains(TutorialStep.OpenWheel) == touch && seen.Count == guide.StepCount - 1,
-                label + ": desktop omits only the Touch wheel lesson and every other lesson is reached");
-            check(sim.Units(0) == 10 && sim.Capacity(0) == 20 && sim.Players[0].catalyst > 0
+            check(guide.StepCount == 13 && seen.Count == guide.StepCount - 1,
+                label + ": all basic lessons are reached in order before victory");
+            check(sim.Units(0) == 10 && sim.Capacity(0) == 20 && sim.Players[0].catalyst == 0 && !sim.HasRole(0, "extractor")
                 && sim.Resources.Sum(r => r.remaining) < map.resources.Sum(r => r.amount),
                 label + ": real harvesting, construction, supply and production support the full tutorial");
             check(catalog.Role(faction, "hq").health == 1400 && catalog.Role(faction, "ranged").duration == 260,

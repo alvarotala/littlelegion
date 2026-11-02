@@ -59,31 +59,13 @@ namespace Frontier.Runtime
         private float neutralSince = -1;
         private static readonly Color Normal = new Color(.035f, .09f, .14f, .98f), Accent = new Color(.16f, .65f, .68f), Ink = new Color(.68f, .86f, .91f);
         private static readonly Color Disabled = new Color(.38f, .47f, .52f), Save = new Color(1, .7f, .3f);
-        public bool CanOpen => Session != null && Session.View != null && Panel != null && Panel.AcceptsGameInput && !Panel.IsDragging && Quest != null && !Quest.Placing;
-
-        public bool TryTutorialTarget(string actionId, out Vector3 position)
-        {
-            position = default;
-            if (!IsOpen || root == null || !root.gameObject.activeInHierarchy) return false;
-            RectTransform target;
-            if (string.IsNullOrEmpty(actionId)) target = heading != null ? heading.rectTransform : root;
-            else
-            {
-                int index = items.FindIndex(item => item.Id == actionId);
-                if (index < 0 || index >= sectorLabels.Count || sectorLabels[index] == null) return false;
-                target = sectorLabels[index].rectTransform;
-            }
-            if (!target.gameObject.activeInHierarchy) return false;
-            position = target.TransformPoint(target.rect.center) - root.forward * .004f;
-            return true;
-        }
+        public bool CanOpen => Session != null && !Session.IsTutorial && Session.View != null && Panel != null && Panel.AcceptsGameInput && !Panel.IsDragging && Quest != null && !Quest.Placing;
 
         // The router calls this before console/terrain input. Every open frame is consumed,
         // including closing and confirmation; it must also drain the confirming trigger release.
         public bool ProcessUnified(Ray pointer, Vector2 stick, bool triggerDown, bool triggerHeld, bool triggerUp, bool cancel, float now,
             bool stickDown = false, bool stickHeld = false, bool stickUp = false)
         {
-            if (Panel != null) Panel.TutorialWheel = this;
             if (IsOpen && !ValidContext()) { Close(); TickHint(pointer, false, now); return true; }
             if (!CanOpen) { openReady = false; TickHint(pointer, false, now); return false; }
             if (cancel && IsOpen)
@@ -129,7 +111,7 @@ namespace Frontier.Runtime
             if (IsOpen && stick.magnitude < .25f && !triggerHeld && !stickHeld)
             {
                 if (neutralSince < 0) neutralSince = now;
-                else if (now - neutralSince >= NeutralCloseDelay && !TeachingWheel) Close();
+                else if (now - neutralSince >= NeutralCloseDelay) Close();
             }
             else neutralSince = -1;
             TickHint(pointer, true, now);
@@ -204,20 +186,12 @@ namespace Frontier.Runtime
             selectedIds.SequenceEqual(Session.Selection.OrderBy(id => id)) &&
             selectedIds.All(id => Session.View.entities.Any(e => e.id == id && e.owner == Session.View.player));
 
-        // The first lesson leaves the wheel on screen while the player reads and
-        // explores. Only deliberately closing it completes the lesson; context
-        // loss (tracking, pause or selection changes) must not skip the objective.
-        private bool TeachingWheel => Session.Tutorial != null && Session.Tutorial.Step == TutorialStep.OpenWheel
-            && !Session.Tutorial.Briefing && Session.Tutorial.WheelExplored;
-
         private void Back(Vector2 stick)
         {
             HideConfirmation();
             if (Page == WheelPage.Root)
             {
-                bool completedLesson = TeachingWheel;
                 Close();
-                if (completedLesson) Session.NotifyTutorialWheel(false);
                 return;
             }
             Enter(WheelPage.Root, stick);
@@ -231,7 +205,6 @@ namespace Frontier.Runtime
             // Deliberate navigation preserves the held direction, including Back.
             // Unexpected action-list changes still invalidate a stale highlight.
             stickReady = true; Aim(stick);
-            if(page==WheelPage.Selection){Session.NotifyTutorialWheel();UpdateDescription();}
         }
 
         private static SelectionAction Navigation(string id, string label, string description)
@@ -390,18 +363,13 @@ namespace Frontier.Runtime
                 title.text = Highlighted >= 0 ? "GROUP " + (Highlighted + 1) : "CONTROL GROUPS";
                 detail.text = Highlighted < 0 ? "Tilt to choose a group" : Session.GroupSize(Highlighted) + " assigned\n" + Session.Selection.Count + " selected";
                 help.text = "Trigger · Select     Stick click · Assign\n" + Panel.Bindings.MenuBackName + " · Back     Center stick to hide";
-                if(TeachingWheel)TutorialCloseHint();
                 return;
             }
             title.text = Highlighted >= 0 ? items[Highlighted].Title : Page == WheelPage.Root ? "COMMANDS" : Page==WheelPage.QuickSelect ? "QUICK SELECT" : Page == WheelPage.Selection ? "SELECTION" : "UNIT ORDERS";
             detail.text = Highlighted >= 0 ? disabled.Contains(items[Highlighted].Id)&&Page!=WheelPage.QuickSelect ? "No actions for this selection" : items[Highlighted].Detail : "Tilt to choose\nTrigger to enter";
             help.text = Page == WheelPage.Root ? "Trigger · Enter     " + Panel.Bindings.MenuBackName + " · Close\nCenter stick to hide" : Page==WheelPage.QuickSelect ? "Trigger · Select     "+Panel.Bindings.MenuBackName+" · Back\nCenter stick to hide" : "Trigger · Confirm     Down · Back\nCenter stick to hide";
-            if(TeachingWheel)TutorialCloseHint();
             if (failedAction != null && failedAction == HighlightedId) { detail.text = failureMessage; detail.color = Save; }
         }
-
-        private void TutorialCloseHint()
-            => ((LocalizedText)help).SetKey("{0} · {1}", Panel.Bindings.MenuBackName, Localization.Text(Page == WheelPage.Root ? "Close" : "Back"));
 
         private void ConfirmGroup(int group, bool save, float now)
         {
