@@ -166,10 +166,10 @@ internal static class Program
             var sim = new Simulation(training, catalog, faction, faction == "industrial" ? "biological" : "industrial");
             var army = sim.Entities.Values.Where(e => e.owner == 0 && sim.Type(e).role == "worker").Take(GuidedTutorial.ArmySize).ToArray();
             string ranged = catalog.Role(faction, "ranged").id;
-            // Fixture setup only: fast-forward directly to the group lessons;
-            // their notification and progression logic remains production code.
+            // Fixture setup only: fast-forward to army selection;
+            // progression and rejection use production code.
             foreach (var unit in army) { unit.definition = ranged; unit.health = catalog[ranged].health; }
-            var tutorial = new GuidedTutorial(sim, true);
+            var tutorial = new GuidedTutorial(sim);
             var session = new GameSession { Catalog = catalog, View = sim.View(0), Tutorial = tutorial };
             int[] ids = army.Select(e => e.id).ToArray(); Select(session, ids);
             Check(!session.CanSaveMobileGroup && session.SaveMobileSelectionGroup() == -1, faction + " welcome briefing rejects early group save");
