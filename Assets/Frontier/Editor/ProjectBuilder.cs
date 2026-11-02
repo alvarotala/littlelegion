@@ -26,7 +26,7 @@ namespace Frontier.Editor
             PlayerSettings.companyName="Frontier";PlayerSettings.productName="Little Legion";
             ConfigureAppIcons();
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"app.sadmonkey.littlelegion");
-            PlayerSettings.bundleVersion="0.1.11";PlayerSettings.Android.bundleVersionCode=12;
+            PlayerSettings.bundleVersion="0.1.12";PlayerSettings.Android.bundleVersionCode=13;
             // Local Nakama playtests use HTTP on private LAN addresses. The public
             // matchmaking client rejects HTTP for Internet endpoints and requires TLS.
             PlayerSettings.insecureHttpOption=InsecureHttpOption.AlwaysAllowed;
