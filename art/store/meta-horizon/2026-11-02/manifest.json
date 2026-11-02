@@ -1,0 +1,250 @@
+{
+  "verified": "2026-11-02",
+  "files": [
+    {
+      "file": "app-icons/little-legion-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "format": "RGB",
+      "sha256": "6e555b23748a26ef3bccbc42b650012a043254b7a1f61f001bb41c6b7dd588fb"
+    },
+    {
+      "file": "app-icons/little-legion-144.png",
+      "width": 144,
+      "height": 144,
+      "format": "RGB",
+      "sha256": "04f2a393f3b2973948c8bf850a923573fa075dfd660d59c576656506c7ef5c1e"
+    },
+    {
+      "file": "app-icons/little-legion-192.png",
+      "width": 192,
+      "height": 192,
+      "format": "RGB",
+      "sha256": "bbd0ae988dbbca136c9b68d171fe7929b7e460835d0c78346a83dd5b9698b3c3"
+    },
+    {
+      "file": "app-icons/little-legion-256.png",
+      "width": 256,
+      "height": 256,
+      "format": "RGB",
+      "sha256": "65bcf3c2fa851ba22d307c57a22234102050a0fee5197300a08ba56ff900d112"
+    },
+    {
+      "file": "app-icons/little-legion-48.png",
+      "width": 48,
+      "height": 48,
+      "format": "RGB",
+      "sha256": "5b38ba24e5cc779b779791fe4de48d8a0b5ac423e0755672f12bf829bbb4efc3"
+    },
+    {
+      "file": "app-icons/little-legion-512.png",
+      "width": 512,
+      "height": 512,
+      "format": "RGB",
+      "sha256": "411ebd5a3129f05e2574c75031ec829115822f4c68d0c772c9b6986988c3dac4"
+    },
+    {
+      "file": "app-icons/little-legion-72.png",
+      "width": 72,
+      "height": 72,
+      "format": "RGB",
+      "sha256": "c869e147da6f45101ad502319b92881fdc3428995b5dfd4ce9a53485b43f3373"
+    },
+    {
+      "file": "app-icons/little-legion-96.png",
+      "width": 96,
+      "height": 96,
+      "format": "RGB",
+      "sha256": "d4dd916fe0c4ebac1b7f1a4bfc2891d63b9eaa1dc8b833ef51cc3b0b8b1cc13b"
+    },
+    {
+      "file": "upload/cover-landscape.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "9771d2c5cce82573452db59b5dcfc72454ca9ce39624a159ecfe982e1cf18407"
+    },
+    {
+      "file": "upload/cover-portrait.png",
+      "width": 1008,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "cc404a0e232eabdb0d9a944182f5c455c429dac57ee2df79584356d699617b37"
+    },
+    {
+      "file": "upload/cover-square.png",
+      "width": 1440,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "14edc2ba019ad62df89c218a93a0f682bddf694385ecf1bf4bc6b15cd2fd399c"
+    },
+    {
+      "file": "upload/hero-cover.png",
+      "width": 3000,
+      "height": 900,
+      "format": "RGB",
+      "sha256": "962062edc2dd73bac1077faaab8ba9c8ee63ad6bbe5d730801c7dee9faccbcc0"
+    },
+    {
+      "file": "upload/icon-512.png",
+      "width": 512,
+      "height": 512,
+      "format": "RGB",
+      "sha256": "411ebd5a3129f05e2574c75031ec829115822f4c68d0c772c9b6986988c3dac4"
+    },
+    {
+      "file": "upload/logo-transparent.png",
+      "width": 2880,
+      "height": 1440,
+      "format": "RGBA",
+      "sha256": "c17fa18bc789c34bbd5c6464d8ab77b436f7e8d323e3e2f0f196c10b1653fe88"
+    },
+    {
+      "file": "upload/mini-landscape.png",
+      "width": 1080,
+      "height": 360,
+      "format": "RGB",
+      "sha256": "5b97648e14fa5c6ef3e83a1ec6bcafe44b67cb067f29dc8f19c03fc466bf7470"
+    },
+    {
+      "file": "screenshots/01-forest-economy.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "14d76fe4697a2d08cd0a78ff1868cca7dc643bfd21edc017e54f50958162d659",
+      "source": "Unity runtime BoardView with unmodified simulation",
+      "map": "rift",
+      "faction": "industrial",
+      "tick": 3000,
+      "visibleEntities": 33,
+      "focusX": 15.4010648727417,
+      "focusY": 15.530974388122559,
+      "radius": 11.0
+    },
+    {
+      "file": "screenshots/02-biological-base.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "b34b7653917e966eeec329d1de1d337d1e6cf9b96c14632c606a9012cbe7092a",
+      "source": "Unity runtime BoardView with unmodified simulation",
+      "map": "desert",
+      "faction": "biological",
+      "tick": 4800,
+      "visibleEntities": 49,
+      "focusX": 20.483638763427734,
+      "focusY": 21.34680938720703,
+      "radius": 11.0
+    },
+    {
+      "file": "screenshots/03-forest-combat.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "c8b41d95704638d5ad05685200e5b0784d4290c8fb040a081196919141283035",
+      "source": "Unity runtime BoardView with unmodified simulation",
+      "map": "rift",
+      "faction": "industrial",
+      "tick": 7069,
+      "visibleEntities": 66,
+      "focusX": 97.92649841308594,
+      "focusY": 105.20025634765625,
+      "radius": 11.0
+    },
+    {
+      "file": "screenshots/04-neon-army.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "7bdb379360918e56dfbf1266229b535013c91ca1b16fd98cbdf84ad33f2f5eb4",
+      "source": "Unity runtime BoardView with unmodified simulation",
+      "map": "training",
+      "faction": "biological",
+      "tick": 6000,
+      "visibleEntities": 71,
+      "focusX": 23.778017044067383,
+      "focusY": 17.985029220581055,
+      "radius": 16.0
+    },
+    {
+      "file": "screenshots/05-desert-expansion.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "cd1898de0b4ab79de8adc69ea7098ffce308709a1f9b728e4627cf1add803afd",
+      "source": "Unity runtime BoardView with unmodified simulation",
+      "map": "desert",
+      "faction": "industrial",
+      "tick": 9600,
+      "visibleEntities": 87,
+      "focusX": 28.031909942626953,
+      "focusY": 64.53717041015625,
+      "radius": 11.0
+    },
+    {
+      "file": "screenshots-v2/01-neon-battle.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "1812ceb1561de212139004f957862f20778f7058959c720c577d577950535950",
+      "source": "Unity runtime capture",
+      "perspective": "replay",
+      "tick": 8420,
+      "ownUnits": 12,
+      "enemyUnits": 10,
+      "working": 0
+    },
+    {
+      "file": "screenshots-v2/02-desert-battle.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "f30155fe31e947b9c4e05ab8cea62329a4c279e4a6d2078be1d6aa5567be04f5",
+      "source": "Unity runtime capture",
+      "perspective": "replay",
+      "tick": 8090,
+      "ownUnits": 8,
+      "enemyUnits": 6,
+      "working": 0
+    },
+    {
+      "file": "screenshots-v2/03-industrial-army.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "ffad478f1b594fc6ecfef97b3a5b7f2e653806cfc92f5086c0ee913ccce24c5d",
+      "source": "Unity runtime capture",
+      "perspective": "player",
+      "tick": 10600,
+      "ownUnits": 27,
+      "enemyUnits": 0,
+      "working": 0
+    },
+    {
+      "file": "screenshots-v2/04-industrial-workers.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "f06627f3d234a34e9af9043f5f4870a04f39354da9b26b02b3517abe75e152f6",
+      "source": "Unity runtime capture",
+      "perspective": "player",
+      "tick": 7310,
+      "ownUnits": 26,
+      "enemyUnits": 0,
+      "working": 11
+    },
+    {
+      "file": "screenshots-v2/05-biological-workers.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "RGB",
+      "sha256": "342aa78678ce20afea15651b7cc55fadd89a69053e914c3e6d5dd730604aa0b6",
+      "source": "Unity runtime capture",
+      "perspective": "player",
+      "tick": 4990,
+      "ownUnits": 31,
+      "enemyUnits": 0,
+      "working": 16
+    }
+  ]
+}

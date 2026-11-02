@@ -1,0 +1,30 @@
+{
+  "generator": "Built-in image_gen",
+  "date": "2026-11-02",
+  "references": [
+    "dev:landing/assets/icon.png",
+    "dev:landing/assets/header.png"
+  ],
+  "prompts": [
+    {
+      "asset": "cover-landscape",
+      "prompt": "Use case: ads-marketing. Create the final landscape store cover for the game Little Legion, 2560x1440 16:9 composition. Input image 1 is the existing approved app icon, input image 2 is the existing promotional illustration; use these as exact visual identity and character-design references, not screenshots. Preserve the low-poly miniature RTS look: cyan stepped command base with three yellow uprights, little cyan/yellow geometric troops with black heads, pink organic base and tiny crab-like biological troops, blue crystals, green faceted forest terrain. No new factions or character types. Clean polished illustrated 3D toy-scale aesthetic consistent with reference 2. A readable central upper title in large bold ivory geometric sans serif, exactly two lines \"LITTLE\" / \"LEGION\", with a subtle dark navy edge for contrast. Title and main subjects fully within central 70% of frame; title around x=50%, y=36%, armies on either side of the lower center, forest on outer edges. Strong hierarchy and restrained scene density. All artwork fills full rectangular canvas. Exact text only \"LITTLE LEGION\". No slogans, badges, UI, watermarks, Meta logos or hardware. This is promotional cover art, not a gameplay screenshot."
+    },
+    {
+      "asset": "hero-cover",
+      "prompt": "Use case: ads-marketing. Generate a finished ultrawide 10:3 HERO COVER for Little Legion. Aim for 3000x900 aspect ratio. References: first image is the existing app icon, second the established promotional scene. Match their exact cyan/yellow geometric Industrial base and miniature troops, pink crab-like Biological troops and organic base, green faceted forest, blue crystals. Preserve original character and building forms. Polished low-poly miniature RTS diorama, rich green and teal palette with warm yellow detail. Across the CENTER put large very bold ivory geometric sans-serif title exactly \"LITTLE LEGION\" on ONE LINE, subtle navy outline, centered horizontally and vertically. Keep title entirely inside middle 60% width and middle 50% height. Armies and bases frame the title from lower left and lower right with clear space behind title, foliage and crystals at edges. Balanced simple scene, high legibility at thumbnail size. NO other text, slogans, badges, logos or UI. Full bleed rectangular image with no borders. This is store promotional illustration, not a screenshot."
+    },
+    {
+      "asset": "cover-square",
+      "prompt": "Use case: ads-marketing. Final SQUARE 1:1 store cover, 1440x1440 target, for Little Legion. References image1 existing app icon, image2 existing promotional art. Faithfully preserve low-poly geometric miniature RTS identity and existing units: cyan/yellow stepped base with three yellow uprights and little cyan/yellow black-headed troops on left lower half, pink organic base and crab-like creatures on right lower half, blue resource crystals, green faceted forest. Rich teal and green with yellow and pink accents. A polished toy-scale illustrated 3D diorama. Huge bold ivory geometric sans-serif title on two centered lines \"LITTLE\" then \"LEGION\" at upper-middle with restrained dark navy outline, very clear. Title within central 70% width and between 24%-51% height, entire key subject group within central 80% frame. Trees at corners, balanced scene, no excessive props. No other words, slogans, badges, Meta logos, UI or watermark. Full bleed square corners. Match established visual identity; promotional illustration, not screenshot."
+    },
+    {
+      "asset": "cover-portrait",
+      "prompt": "Use case: ads-marketing. Final PORTRAIT 7:10 store cover for Little Legion, intended 1008x1440. Image1 existing icon, image2 existing promotional illustration are strict visual identity references. Keep identical low-poly geometric miniature RTS cyan stepped command base with three yellow uprights and cyan/yellow troops with black heads, pink organic base and pink crab-like biological troops; green faceted forest, blue crystals. No invented factions. Polished 3D toy-scale illustrative look with rich greens/teal, yellow and pink details. Huge bold ivory geometric sans-serif title exactly two lines \"LITTLE\" then \"LEGION\", centered around 37% image height, subtle navy outline for excellent contrast. Entire title in central 72% width; generous top/bottom margins. Armies face inward across lower half of diorama, bases toward sides, foliage at outer edges. Cohesive design with the established landscape scene, readable and restrained. Full bleed rectangular corners. No taglines, extra text, UI, badges, hardware, Meta logos, watermark. This is promotional cover art, not gameplay screenshot."
+    },
+    {
+      "asset": "logo",
+      "prompt": "Use case: background-extraction. Edit target is the supplied Little Legion landscape cover. Extract ONLY the exact two-line \"LITTLE LEGION\" title lettering from this image, retaining the existing ivory letter faces, dark navy outlines and subtle extruded dark navy depth. Remove absolutely all scenery, grass, crystals, troops and buildings. Output a tightly framed standalone logo on a genuinely transparent alpha background with generous transparent margin. Preserve the typography, spelling, proportions, ivory/navy colors and two-line layout exactly; do not redraw a new font or add words. No ground plane, glow or cast shadow outside the wordmark."
+    }
+  ]
+}

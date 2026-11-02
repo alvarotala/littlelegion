@@ -24,15 +24,16 @@ namespace Frontier.Editor
         {
             Directory.CreateDirectory("Assets/Frontier/Settings");Directory.CreateDirectory("Assets/Frontier/Scenes");
             PlayerSettings.companyName="Frontier";PlayerSettings.productName="Little Legion";
+            ConfigureAppIcons();
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"app.sadmonkey.littlelegion");
-            PlayerSettings.bundleVersion="0.1.9";PlayerSettings.Android.bundleVersionCode=10;
+            PlayerSettings.bundleVersion="0.1.11";PlayerSettings.Android.bundleVersionCode=12;
             // Local Nakama playtests use HTTP on private LAN addresses. The public
             // matchmaking client rejects HTTP for Internet endpoints and requires TLS.
             PlayerSettings.insecureHttpOption=InsecureHttpOption.AlwaysAllowed;
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android,ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures=AndroidArchitecture.ARM64;
             PlayerSettings.Android.minSdkVersion=AndroidSdkVersions.AndroidApiLevel32;
-            PlayerSettings.Android.targetSdkVersion=AndroidSdkVersions.AndroidApiLevelAuto;
+            PlayerSettings.Android.targetSdkVersion=AndroidSdkVersions.AndroidApiLevel34;
             PlayerSettings.colorSpace=ColorSpace.Linear;
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android,false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android,new[]{GraphicsDeviceType.Vulkan});
@@ -96,6 +97,31 @@ namespace Frontier.Editor
             AssetDatabase.SaveAssets();AssetDatabase.Refresh();
             Debug.Log("FRONTIER_CONFIGURED");
         }
+        private static void ConfigureAppIcons()
+        {
+            const string path="Assets/Frontier/Branding/LittleLegionIcon.png";
+            var importer=AssetImporter.GetAtPath(path) as TextureImporter;
+            if(importer==null)throw new BuildFailedException("App icon not found: "+path);
+            if(importer.textureCompression!=TextureImporterCompression.Uncompressed || importer.mipmapEnabled || importer.maxTextureSize<512)
+            {
+                importer.textureCompression=TextureImporterCompression.Uncompressed;
+                importer.mipmapEnabled=false;importer.maxTextureSize=512;
+                importer.SaveAndReimport();
+            }
+            var icon=AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if(icon==null)throw new BuildFailedException("Could not load app icon: "+path);
+            PlayerSettings.SetIcons(NamedBuildTarget.Unknown,new[]{icon},IconKind.Any);
+            // Fill the Android single-layer (legacy and round) slots. Unassigned
+            // adaptive layers retain Unity's fallback to the default app icon.
+            foreach(var kind in PlayerSettings.GetSupportedIconKinds(NamedBuildTarget.Android))
+            {
+                var slots=PlayerSettings.GetPlatformIcons(NamedBuildTarget.Android,kind);
+                if(slots.Any(slot=>slot.minLayerCount>1))continue;
+                foreach(var slot in slots)slot.SetTexture(icon);
+                PlayerSettings.SetPlatformIcons(NamedBuildTarget.Android,kind,slots);
+            }
+            Debug.Log("LITTLE_LEGION_APP_ICON_CONFIGURED "+path);
+        }
         public static void RetainRuntimeShaders()
         {
             // Shader.Find assets must be explicitly retained in player builds.
@@ -115,11 +141,39 @@ namespace Frontier.Editor
         public static void BuildQuest()
         {
             Configure();
+            ConfigureReleaseSigning();
             if(!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Android,BuildTarget.Android))throw new BuildFailedException("Android Build Support is missing.");
             PrepareOutput("Builds/Quest");
             var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{scenes=new[]{ScenePath},locationPathName="Builds/Quest/LittleLegion.apk",target=BuildTarget.Android,options=BuildOptions.None});
             if(report.summary.result!=BuildResult.Succeeded)throw new BuildFailedException("Quest build failed: "+report.summary.result);
             Debug.Log("FRONTIER_APK_BUILT "+report.summary.totalSize);
+        }
+        [Serializable]
+        private sealed class ReleaseSigningConfig
+        {
+            public string keystorePath;
+            public string keystorePassword;
+            public string keyAlias;
+            public string keyAliasPassword;
+        }
+        private static void ConfigureReleaseSigning()
+        {
+            const string configPath="Signing/private/release-signing.json";
+            if(!File.Exists(configPath))
+                throw new BuildFailedException("Release signing configuration missing: "+configPath+". See Signing/README.md.");
+            var config=JsonUtility.FromJson<ReleaseSigningConfig>(File.ReadAllText(configPath));
+            if(config==null || string.IsNullOrWhiteSpace(config.keystorePath) || string.IsNullOrWhiteSpace(config.keystorePassword)
+                || string.IsNullOrWhiteSpace(config.keyAlias) || string.IsNullOrWhiteSpace(config.keyAliasPassword))
+                throw new BuildFailedException("Release signing configuration is incomplete. See Signing/README.md.");
+            string keystore=Path.GetFullPath(config.keystorePath);
+            if(!File.Exists(keystore))throw new BuildFailedException("Release keystore not found. See Signing/README.md.");
+            PlayerSettings.Android.useCustomKeystore=true;
+            PlayerSettings.Android.keystoreName=keystore;
+            PlayerSettings.Android.keystorePass=config.keystorePassword;
+            PlayerSettings.Android.keyaliasName=config.keyAlias;
+            PlayerSettings.Android.keyaliasPass=config.keyAliasPassword;
+            AssetDatabase.SaveAssets();
+            Debug.Log("LITTLE_LEGION_RELEASE_SIGNING_CONFIGURED");
         }
         [MenuItem("Frontier/Build desktop playtest")]
         public static void BuildDesktop()

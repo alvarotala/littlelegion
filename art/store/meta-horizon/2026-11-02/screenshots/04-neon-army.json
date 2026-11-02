@@ -1,0 +1,9 @@
+{
+    "map": "training",
+    "faction": "biological",
+    "tick": 6000,
+    "visibleEntities": 71,
+    "focusX": 23.778017044067384,
+    "focusY": 17.985029220581056,
+    "radius": 16.0
+}

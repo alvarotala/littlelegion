@@ -1,0 +1,28 @@
+LITTLE LEGION — BORRADOR DE FICHA
+
+ES — Descripción breve
+Dirige pequeños ejércitos en un campo de batalla de estrategia en tiempo real.
+
+ES — Descripción
+Pequeños ejércitos. Grandes batallas.
+
+Construye tu base, reúne minerales y gas, entrena tropas y dirige cada avance en Little Legion, un juego de estrategia en tiempo real con ejércitos en miniatura.
+
+Elige entre las apariencias industrial y biológica, desarrolla tu economía y combina trabajadores, infantería, artillería y unidades con habilidades. Explora el mapa, controla los accesos y aprovecha el terreno para alcanzar la base rival.
+
+Aprende con el tutorial guiado, practica contra la IA y revisa tus partidas mediante el historial y las repeticiones. La interfaz está disponible en español e inglés.
+
+EN — Short description
+Command miniature armies in a real-time strategy battlefield.
+
+EN — Description
+Little armies. Big battles.
+
+Build your base, gather minerals and gas, train troops and direct every advance in Little Legion, a real-time strategy game with miniature armies.
+
+Choose industrial or biological armies, grow your economy and combine workers, infantry, artillery and units with special abilities. Scout the map, control key approaches and use the terrain to reach the opposing base.
+
+Learn through the guided tutorial, practice against the AI and revisit your matches with history and replays. The interface supports English and Spanish.
+
+REVISIÓN ANTES DE PUBLICAR
+Validar la descripción contra el APK final de Quest. Añadir detalles del multijugador después de comprobar ese flujo en el build de publicación. No anuncia skins futuras, precios, compras ni plataformas adicionales.

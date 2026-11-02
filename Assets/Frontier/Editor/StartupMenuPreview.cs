@@ -73,7 +73,7 @@ namespace Frontier.Editor
                 anchor.SetPositionAndRotation(new Vector3(25,.9f,-17),Quaternion.Euler(0,-87,0));board.Width=.65f;board.Fit();Refresh();
                 CheckShared("Late anchor restoration and board resizing");
                 Check(PlayerPrefs.GetString(key)==legacyProfile,"Navigation and anchor restoration do not migrate the old preference implicitly");
-                CheckInterruptedDrag(panel.CancelPointerInteraction,"Cancelling pointer input during a lobby drag");
+                CheckInterruptedDrag(()=>panel.CancelPointerInteraction(),"Cancelling pointer input during a lobby drag");
                 Drag(.3f);string lobbyProfile=PlayerPrefs.GetString(key);
                 var lobbyOffset=JsonUtility.FromJson<WindowPlacementProbe>(lobbyProfile);
                 Check(lobbyOffset.version==2&&Vector3.Distance(eye.position+HorizontalFacing()*lobbyOffset.offset,Center())<.0001f,

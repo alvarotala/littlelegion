@@ -1,0 +1,9 @@
+{
+    "map": "rift",
+    "faction": "industrial",
+    "tick": 3000,
+    "visibleEntities": 33,
+    "focusX": 15.4010648727417,
+    "focusY": 15.530974388122559,
+    "radius": 11.0
+}

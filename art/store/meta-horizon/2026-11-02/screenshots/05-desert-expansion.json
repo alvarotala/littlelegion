@@ -1,0 +1,9 @@
+{
+    "map": "desert",
+    "faction": "industrial",
+    "tick": 9600,
+    "visibleEntities": 87,
+    "focusX": 28.031909942626954,
+    "focusY": 64.53717041015625,
+    "radius": 11.0
+}

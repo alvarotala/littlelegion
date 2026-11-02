@@ -1,0 +1,9 @@
+{
+    "map": "desert",
+    "faction": "biological",
+    "tick": 4800,
+    "visibleEntities": 49,
+    "focusX": 20.483638763427736,
+    "focusY": 21.34680938720703,
+    "radius": 11.0
+}

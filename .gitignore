@@ -36,3 +36,6 @@ Assets/Resources/PerformanceTestRunSettings.json.meta
 # NGO's editor-generated sample prefab catalog; sessions use an explicit runtime config.
 Assets/DefaultNetworkPrefabs.asset
 Assets/DefaultNetworkPrefabs.asset.meta
+
+# Release signing: keep the private key and credentials local to this project.
+/Signing/private/
