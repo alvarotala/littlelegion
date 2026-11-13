@@ -139,6 +139,7 @@ def metadata(path: Path, folder: bool = False) -> None:
 
 
 def prepare() -> tuple[str, dict]:
+    subprocess.run([sys.executable, str(ROOT / "scripts/online-release.py"), "--check"], check=True)
     # Unity 6.3's toolchain packages are host-specific. This generator currently
     # targets the validated authoring host; do not silently select an incompatible
     # binary toolchain on another machine.
@@ -186,6 +187,8 @@ def prepare() -> tuple[str, dict]:
     resources.mkdir()
     for name in ("catalog.json", "catalog.json.meta"):
         shutil.copy2(ROOT / "Assets/Frontier/Resources" / name, resources / name)
+    shutil.copy2(ROOT / "backend/nakama/release.json", resources / "online-release.json")
+    metadata(resources / "online-release.json")
     shutil.copytree(ROOT / "Assets/Frontier/Resources/Maps", resources / "Maps")
     shutil.copy2(ROOT / "Assets/Frontier/Resources/Maps.meta", resources / "Maps.meta")
     shutil.copy2(ROOT / "server/ServerBootstrap.cs", STAGE / "Assets/ServerBootstrap.cs")

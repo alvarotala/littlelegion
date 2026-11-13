@@ -37,6 +37,9 @@ namespace Frontier.Editor
                     CameraAt(0); Refresh();
                     Check(Value(hq.id) == "6/8", "Unselected base shows the six starting workers and capacity across four mineral patches");
                     Check(Labels().Length == 1, "Unbuilt gas and enemy bases do not show workforce counters");
+                    Check(Label(hq.id).GetComponentsInChildren<Text>().Length == 1 &&
+                        Label(hq.id).GetComponentInChildren<ConsoleGlyph>().Glyph == ConsoleGlyph.Kind.Mineral,
+                        "Mineral badge uses only the resource icon and staffing numbers");
                     session.Selection.Clear(); foreach (var worker in workers) session.Selection.Add(worker.id); session.Send(CommandKind.Stop); Refresh();
                     Check(Value(hq.id) == "0/8", "Stopping all workers clears the assigned count");
                     Assign(workers.Take(5), mineral.id); Check(Value(hq.id) == "5/8" && Count(hq.id).color == Color.white, "Five mineral workers produce a normal 5/8 counter"); Capture(faction + "-5-of-8");
@@ -49,6 +52,9 @@ namespace Frontier.Editor
                     session.Match.Entities.Add(extractor.id, extractor); session.Match.Map.Occupy(extractor.position, extractorType.footprint, extractor.id); Refresh();
                     Check(Labels().Length == 1, "Gas counter waits for a completed extractor");
                     extractor.complete = true; Refresh(); Check(Value(extractor.id) == "0/3", "Completed gas extractor shows 0/3 without selection");
+                    Check(Label(extractor.id).GetComponentsInChildren<Text>().Length == 1 &&
+                        Label(extractor.id).GetComponentInChildren<ConsoleGlyph>().Glyph == ConsoleGlyph.Kind.Gas,
+                        "Gas badge uses only the resource icon and staffing numbers");
                     Assign(workers.Skip(9).Take(3), gas.id); Check(Value(extractor.id) == "3/3" && Count(extractor.id).color == Color.white, "Optimal gas staffing stays normal");
                     Assign(workers.Skip(12).Take(1), gas.id); Check(Value(extractor.id) == "4/3" && Count(extractor.id).color == HarvestingMarkers.ExcessColor, "Excess gas staffing turns 4/3 red");
                     session.Selection.Clear(); Refresh(); Check(Value(hq.id) == "9/8" && Value(extractor.id) == "4/3", "Both counters stay visible without selected units or buildings"); Capture(faction + "-excess");

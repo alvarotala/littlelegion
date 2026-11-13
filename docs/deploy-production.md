@@ -18,6 +18,62 @@ regenerar credenciales desde cero.
 - [Recuperación de datos](#9-recuperar-datos-desde-un-backup)
 - [Diagnóstico y operación](#10-operación-y-problemas-frecuentes)
 
+## Actualización obligatoria a 0.1.13
+
+Este release requiere **actualizar juntos el servidor Unity Linux y el módulo de Nakama**, además de instalar el cliente 0.1.13. Cambian el balance, las reservas de recursos y las reglas de simulación: protocolo **3**, reglas **7**. `backend/nakama/release.json` fija la versión aceptada y el SHA-256 del catálogo/mapas. Nakama rechaza búsquedas de otras versiones, versiones ausentes, reglas o contenido distintos y servidores dedicados incompatibles. Las búsquedas guardan su versión y se vuelven a comprobar en la cola y al formar la pareja.
+
+El cliente 0.1.13 consulta `ll_client_policy` antes de abrir una búsqueda y muestra **“Actualización necesaria. Instala la última versión de Little Legion para jugar online.”** si no coincide. El servidor también valida la petición, aunque un cliente omita esa consulta. Los APK anteriores quedan bloqueados al actualizar Nakama, pero su interfaz ya publicada puede mostrar el error genérico de conexión: no es posible cambiar retroactivamente ese mensaje. Las partidas contra IA siguen disponibles sin actualizar.
+
+### Archivos preparados en la Mac
+
+- `Builds/Quest/LittleLegion-0.1.13.apk`: APK firmado de Quest, versión 0.1.13 / código Android 14.
+- `Builds/Server/`: servidor Linux x86-64 IL2CPP y sus datos, compilados desde el mismo catálogo y reglas.
+- `Builds/LittleLegion-server-0.1.13-linux-x86_64.tar.gz`: copia transportable del servidor, sin carpetas de depuración que Unity marca como no distribuibles.
+
+Estos artefactos están excluidos de Git. No basta con actualizar el código ni con reiniciar un contenedor viejo. El servidor anterior se conserva en `Builds/Archive/Server-before-0.1.13-*`.
+
+### Aplicar en producción
+
+La rama `codex/release-0.1.13` y sus commits deben estar disponibles en el remoto antes de usar los comandos siguientes. Esta entrega solo crea commits locales: **no publica código ni modifica producción**. Esperar a que terminen las partidas; `bin/deploy` también comprueba que no haya partidas activas o pendientes.
+
+Desde la Mac, transferir el directorio completo del servidor nuevo:
+
+```bash
+rsync -av --exclude='*_BackUpThisFolder_ButDontShipItWithYourGame/' --exclude='*_BurstDebugInformation_DoNotShip/' \
+  /Users/alvaro/Documents/vr-rts-game/Builds/Server/ \
+  root@50.6.197.145:/root/little-legion/Builds/Server/
+```
+
+En Ubuntu:
+
+```bash
+cd /root/little-legion
+git fetch origin
+git switch codex/release-0.1.13
+git pull --ff-only
+python3 scripts/online-release.py --check
+bin/deploy
+```
+
+`git switch` puede crear la rama local a partir de `origin/codex/release-0.1.13` si todavía no existe localmente. Confirmar el commit con `git log -1 --oneline`. Si hay cambios locales, conservarlos antes de continuar. `bin/deploy` usa la rama actual, reconstruye las imágenes de Nakama y Unity, verifica un backup/restauración de PostgreSQL, aplica la migración y recrea los servicios. La columna `ll_searches.game_version` se incorpora automáticamente sin borrar cuentas ni ranking. Mantener `.cache/online`, sus claves y los volúmenes; no ejecutar `down -v` ni regenerar configuración.
+
+Después:
+
+```bash
+dc() { docker compose --env-file .cache/online/env -f compose.online.yml "$@"; }
+dc ps -a
+dc logs --since=10m --tail=100 nakama server
+curl --fail --show-error --max-time 15 https://server-us-1.littlelegion.app/healthcheck
+dc exec -T postgres psql -X -U nakama -d nakama -c \
+  "SELECT id,protocol,rules,content_hash,active,now()-heartbeat_at AS heartbeat_age FROM ll_servers;"
+```
+
+El servidor debe registrar `FRONTIER_ALLOCATION Registered dedicated server.`, anunciar protocolo 3 / reglas 7 y el hash **`3D5283637DB6B6CA4658548F037DB8B8469A2BFFFAB76C8B301CB56B03917199`**, igual al manifiesto de este release. Comprobar una partida con dos clientes 0.1.13 y que un cliente 0.1.12 no pueda buscar partida. La validación local no sustituye HTTPS/UDP externos ni una partida real en Quest.
+
+### Próximos releases
+
+Al cambiar versión, protocolo, reglas, catálogo o mapas, ejecutar `python3 scripts/online-release.py` y comitear `backend/nakama/release.json`. `--check`, el build de Quest y el generador del servidor detectan un manifiesto desactualizado. Compilar y desplegar Nakama y los clientes juntos. Si el servidor Unity ya no comparte las reglas/contenido, recompilarlo también. La política acepta exactamente la versión publicada; no concede acceso a una versión anterior solo porque conserve el mismo protocolo.
+
 ## Instalación de referencia
 
 | Elemento | Valor |

@@ -150,12 +150,32 @@ namespace Frontier.Editor
         public static void BuildQuest()
         {
             Configure();
+            ValidateOnlineRelease();
             ConfigureReleaseSigning();
             if(!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Android,BuildTarget.Android))throw new BuildFailedException("Android Build Support is missing.");
             PrepareOutput("Builds/Quest");
             var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{scenes=new[]{ScenePath},locationPathName="Builds/Quest/LittleLegion.apk",target=BuildTarget.Android,options=BuildOptions.None});
             if(report.summary.result!=BuildResult.Succeeded)throw new BuildFailedException("Quest build failed: "+report.summary.result);
             Debug.Log("FRONTIER_APK_BUILT "+report.summary.totalSize);
+        }
+        [Serializable]
+        private sealed class OnlineReleasePolicy { public string version,contentHash; public int protocol,rules; }
+        public static void ValidateOnlineRelease()
+        {
+            var policy=JsonUtility.FromJson<OnlineReleasePolicy>(File.ReadAllText("backend/nakama/release.json"));
+            if(policy==null||policy.version!=PlayerSettings.bundleVersion||policy.protocol!=Networking.MatchCompatibility.Protocol
+                ||policy.rules!=Networking.MatchCompatibility.Rules||policy.contentHash!=Networking.MatchCompatibility.ContentHash)
+                throw new BuildFailedException("Online release policy is stale. Run python3 scripts/online-release.py and rebuild client, server and Nakama together.");
+            Debug.Log("FRONTIER_ONLINE_RELEASE_VALID "+policy.version+" "+Networking.MatchCompatibility.Key);
+        }
+        public static void ValidateReleaseDelivery()
+        {
+            ValidateOnlineRelease();
+            OnlineServicesChecks.Run();
+            ConstructionPreview.Render();
+            HarvestingMarkersPreview.Render();
+            LocalizationPreview.Run();
+            Debug.Log("FRONTIER_RELEASE_DELIVERY_VALIDATED");
         }
         [Serializable]
         private sealed class ReleaseSigningConfig

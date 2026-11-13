@@ -11,6 +11,12 @@ using UnityEngine;
 
 namespace Frontier.Runtime
 {
+    public sealed class OnlineUpdateRequiredException : Exception
+    {
+        public const string Notice = "Update required. Install the latest version of Little Legion to play online.";
+        public OnlineUpdateRequiredException() : base(Notice) { }
+    }
+
     [Serializable] public sealed class PublicMatchConnection
     {
         public string matchId, host, joinTicket, faction;
@@ -64,9 +70,12 @@ namespace Frontier.Runtime
                 // a search created on the server even if its response arrived late.
                 session = await client.AuthenticateDeviceAsync(identityOverride ?? Identity(endpoint));
                 CheckCancellation(token);
+                var policy = await Rpc<ClientPolicy>("ll_client_policy", new EmptyRequest());
+                CheckCancellation(token);
+                ValidateClientPolicy(policy.version, policy.protocol, policy.rules, policy.contentHash);
                 var opened = await Rpc<SearchOpened>("ll_search_open", new SearchRequest
                 {
-                    faction = faction, protocol = MatchCompatibility.Protocol,
+                    gameVersion = Application.version, faction = faction, protocol = MatchCompatibility.Protocol,
                     rules = MatchCompatibility.Rules, contentHash = MatchCompatibility.ContentHash
                 });
                 searchId = opened.searchId;
@@ -131,9 +140,13 @@ namespace Frontier.Runtime
                     await Task.Delay(1000, token);
                 }
             }
-            catch (ApiResponseException)
+            catch (ApiResponseException error)
             {
                 CheckCancellation(token);
+                // A policy rollout can race with the preflight request. Never
+                // display the raw response; this marker maps to fixed safe UI text.
+                if (error.Message.IndexOf("UPDATE_REQUIRED", StringComparison.Ordinal) >= 0)
+                    throw new OnlineUpdateRequiredException();
                 throw new InvalidOperationException("The online service could not complete the search. Check the connection and try again.");
             }
             finally
@@ -157,6 +170,15 @@ namespace Frontier.Runtime
         {
             if (rating < 0 || radius < 100 || radius > 400 || radius % 100 != 0 || revision != radius / 100 - 1)
                 throw new InvalidOperationException("The service returned an invalid rating range.");
+        }
+
+        public static void ValidateClientPolicy(string version, int protocol, int rules, string contentHash)
+        {
+            if (string.IsNullOrEmpty(version) || version.Length > 32 || !System.Text.RegularExpressions.Regex.IsMatch(version, @"^[0-9]+\.[0-9]+\.[0-9]+$")
+                || protocol < 1 || rules < 1 || contentHash == null || !System.Text.RegularExpressions.Regex.IsMatch(contentHash, @"^[A-F0-9]{64}$"))
+                throw new InvalidOperationException("The online service returned an invalid release policy.");
+            if (version != Application.version || protocol != MatchCompatibility.Protocol || rules != MatchCompatibility.Rules || contentHash != MatchCompatibility.ContentHash)
+                throw new OnlineUpdateRequiredException();
         }
 
         public async Task CancelAsync()
@@ -284,7 +306,9 @@ namespace Frontier.Runtime
             }
         }
 
-        [Serializable] private sealed class SearchRequest { public string faction, contentHash; public int protocol, rules; }
+        [Serializable] private sealed class EmptyRequest { }
+        [Serializable] private sealed class ClientPolicy { public string version, contentHash; public int protocol, rules; }
+        [Serializable] private sealed class SearchRequest { public string gameVersion, faction, contentHash; public int protocol, rules; }
         [Serializable] private sealed class SearchReference { public string searchId; }
         [Serializable] private sealed class SearchOpened { public string searchId; public int rating, searchRadius, queueRevision; }
         [Serializable] private sealed class SearchState { public string status, message; public int rating, searchRadius, queueRevision; public PublicMatchConnection connection; }

@@ -11,7 +11,10 @@ namespace Frontier.Runtime
     public sealed class HarvestingMarkers : System.IDisposable
     {
         public static readonly Color ExcessColor = new Color(1, .22f, .18f);
+        private static readonly Color ConstructionColor = new Color(.76f, .86f, .88f);
+        private static readonly Color WaitingColor = new Color(1, .72f, .36f);
         private const float PixelScale = .00032f;
+        private const float BadgeWidth = 128, ProgressWidth = 96;
         private readonly Transform root;
         private readonly Font font;
         private readonly Material stemMaterial;
@@ -22,7 +25,8 @@ namespace Frontier.Runtime
         private sealed class Marker
         {
             public RectTransform rect;
-            public Text count, title;
+            public Text count;
+            public ConsoleGlyph icon;
             public RectTransform progress;
             public bool construction;
             public LineRenderer stem;
@@ -31,7 +35,7 @@ namespace Frontier.Runtime
         {
             root = new GameObject("Harvesting counters").transform; root.SetParent(parent, false);
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            stemMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit")); stemMaterial.color = new Color(.65f, .65f, .65f);
+            stemMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit")); stemMaterial.color = new Color(.30f, .40f, .44f);
         }
         public void Update(BoardView board, Camera viewer)
         {
@@ -53,19 +57,24 @@ namespace Frontier.Runtime
                     active.Add(building.id);
                     if (markers.TryGetValue(building.id, out var marker) && marker.construction != construction)
                     { Release(marker.rect.gameObject); markers.Remove(building.id); marker = null; }
-                    if (marker == null) markers[building.id] = marker = Create(building.id, gas, construction, role == "hq");
+                    if (marker == null) markers[building.id] = marker = Create(building.id, gas, construction);
                     if (construction)
                     {
-                        marker.title.text = building.awaitingClearance ? "CLEARING AREA" : "UNDER CONSTRUCTION";
+                        marker.icon.Glyph = building.awaitingClearance ? ConsoleGlyph.Kind.History : ConsoleGlyph.Kind.Construction;
+                        marker.icon.color = building.awaitingClearance ? WaitingColor : ConstructionColor;
                         float progress = Mathf.Clamp01(building.progress);
                         marker.count.text = Mathf.Min(99, Mathf.FloorToInt(progress * 100)) + "%";
-                        marker.progress.sizeDelta = new Vector2(196 * progress, 7);
+                        marker.progress.sizeDelta = new Vector2(ProgressWidth * progress, 2);
                         continue;
                     }
                     int assigned = deposits.Sum(r => r.assignedWorkers), optimal = deposits.Sum(r => r.optimalWorkers);
                     string value = assigned + "/" + optimal;
                     if (marker.count.text != value) marker.count.text = value;
                     marker.count.color = assigned > optimal ? ExcessColor : Color.white;
+                    // Leave room for unusually large staffing totals without shrinking the digits.
+                    float width = Mathf.Max(BadgeWidth, marker.count.preferredWidth + 54);
+                    marker.rect.sizeDelta = new Vector2(width, marker.rect.sizeDelta.y);
+                    marker.count.rectTransform.sizeDelta = new Vector2(width - 46, 34);
                 }
                 foreach (int id in markers.Keys.Where(id => !active.Contains(id)).ToArray())
                 { Release(markers[id].rect.gameObject); markers.Remove(id); }
@@ -77,13 +86,13 @@ namespace Frontier.Runtime
                 if (!board.TryEntityTop(item.Key, out var top) || !InsideBoard(board, top)) { marker.rect.gameObject.SetActive(false); continue; }
                 marker.rect.gameObject.SetActive(true);
                 marker.rect.localScale = Vector3.one * (PixelScale / board.CellScale);
-                marker.rect.position = top + board.transform.up * .035f;
+                marker.rect.position = top + board.transform.up * .020f;
                 Face(marker.rect, viewer);
                 // Keep nearby mineral/gas counters distinct even on a compact board.
                 Rect screen = ScreenRect(marker.rect, viewer);
                 for (int attempt = 0; attempt < 6 && occupied.Any(rect => rect.Overlaps(screen)); attempt++)
                 {
-                    marker.rect.position += viewer.transform.up * .032f; Face(marker.rect, viewer);
+                    marker.rect.position += viewer.transform.up * .018f; Face(marker.rect, viewer);
                     screen = ScreenRect(marker.rect, viewer);
                 }
                 bool visible = viewer.WorldToViewportPoint(marker.rect.position).z > 0;
@@ -94,33 +103,33 @@ namespace Frontier.Runtime
                 marker.stem.SetPosition(1, marker.rect.TransformPoint(new Vector3(0, marker.rect.rect.yMin, 0)));
             }
         }
-        private Marker Create(int id, bool gas, bool construction, bool headquarters)
+        private Marker Create(int id, bool gas, bool construction)
         {
             var rect = new GameObject(construction ? "Construction " + id : (gas ? "Gas" : "Mineral") + " workers " + id, typeof(RectTransform), typeof(Canvas)).GetComponent<RectTransform>();
-            rect.SetParent(root, false); rect.sizeDelta = construction ? new Vector2(220, 112) : new Vector2(180, 84);
+            rect.SetParent(root, false); rect.sizeDelta = new Vector2(BadgeWidth, construction ? 46 : 40);
             var canvas = rect.GetComponent<Canvas>(); canvas.renderMode = RenderMode.WorldSpace; canvas.sortingOrder = 5;
-            var background = rect.gameObject.AddComponent<Image>(); background.color = construction ? new Color(.04f, .04f, .04f, .98f) : new Color(.015f, .035f, .05f, .96f); background.raycastTarget = false;
-            var title = Text(rect, construction ? "Construction status" : "Resource", new Vector2(0, construction ? 36 : 24), new Vector2(construction ? 210 : 170, 23), 15);
-            title.text = construction ? "UNDER CONSTRUCTION" : gas ? "GAS WORKERS" : "MINERAL WORKERS";
-            title.color = construction ? Color.white : gas ? new Color(.83f, .65f, 1) : new Color(.4f, .88f, 1);
-            var count = Text(rect, construction ? "Construction percent" : "Assigned / optimal", new Vector2(0, construction ? 4 : -10), new Vector2(170, 48), construction ? 32 : 38);
+            var background = rect.gameObject.AddComponent<Image>(); background.color = new Color(.025f, .045f, .055f, .78f); background.raycastTarget = false;
+            ConsoleTheme.StylePill(background);
+            var icon = new GameObject("Status icon", typeof(RectTransform)).AddComponent<ConsoleGlyph>(); icon.transform.SetParent(rect, false);
+            icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0, .5f);
+            icon.rectTransform.anchoredPosition = new Vector2(23, construction ? 3 : 0); icon.rectTransform.sizeDelta = Vector2.one * 24;
+            icon.Glyph = construction ? ConsoleGlyph.Kind.Construction : gas ? ConsoleGlyph.Kind.Gas : ConsoleGlyph.Kind.Mineral;
+            icon.color = construction ? ConstructionColor : gas ? new Color(.83f, .65f, 1) : new Color(.4f, .88f, 1);
+            var count = Text(rect, construction ? "Construction percent" : "Assigned / optimal", new Vector2(16, construction ? 3 : 0), new Vector2(BadgeWidth - 46, 34), 26);
             count.color = Color.white;
             RectTransform progress = null;
             if (construction)
             {
                 var track = new GameObject("Construction progress track", typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
-                track.SetParent(rect, false); track.anchoredPosition = new Vector2(0, -24); track.sizeDelta = new Vector2(196, 7);
-                track.GetComponent<Image>().color = new Color(.25f, .25f, .25f); track.GetComponent<Image>().raycastTarget = false;
+                track.SetParent(rect, false); track.anchoredPosition = new Vector2(0, -15); track.sizeDelta = new Vector2(ProgressWidth, 2);
+                track.GetComponent<Image>().color = new Color(.65f, .75f, .78f, .20f); track.GetComponent<Image>().raycastTarget = false;
                 progress = new GameObject("Construction progress", typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
                 progress.SetParent(track, false); progress.anchorMin = progress.anchorMax = progress.pivot = new Vector2(0, .5f);
-                progress.GetComponent<Image>().color = Color.white; progress.GetComponent<Image>().raycastTarget = false;
-                var status = Text(rect, "Availability", new Vector2(0, -43), new Vector2(210, 20), 13);
-                status.text = headquarters ? "NO RESOURCE DELIVERY YET" : "NOT OPERATIONAL YET";
-                status.color = Color.white;
+                progress.GetComponent<Image>().color = ConstructionColor; progress.GetComponent<Image>().raycastTarget = false;
             }
             var stem = new GameObject("Attachment").AddComponent<LineRenderer>(); stem.transform.SetParent(rect, false);
-            stem.sharedMaterial = stemMaterial; stem.positionCount = 2; stem.useWorldSpace = true; stem.widthMultiplier = .0006f;
-            return new Marker { rect = rect, count = count, title = title, stem = stem, progress = progress, construction = construction };
+            stem.sharedMaterial = stemMaterial; stem.positionCount = 2; stem.useWorldSpace = true; stem.widthMultiplier = .0003f;
+            return new Marker { rect = rect, count = count, icon = icon, stem = stem, progress = progress, construction = construction };
         }
         private Text Text(Transform parent, string name, Vector2 position, Vector2 size, int fontSize)
         {

@@ -7,6 +7,7 @@ import (
 )
 
 type searchRequest struct {
+	GameVersion string `json:"gameVersion"`
 	Faction     string `json:"faction"`
 	Protocol    int    `json:"protocol"`
 	Rules       int    `json:"rules"`
@@ -24,6 +25,9 @@ func searchOpen(ctx context.Context, logger runtime.Logger, tx *sql.Tx, user, pa
 	if !validFaction(req.Faction) || !validCompatibility(req.Protocol, req.Rules, req.ContentHash) {
 		return nil, invalid("Invalid faction or compatibility")
 	}
+	if err := requireClientRelease(req.GameVersion, req.Protocol, req.Rules, req.ContentHash); err != nil {
+		return nil, err
+	}
 	var active string
 	err := tx.QueryRowContext(ctx, `SELECT id FROM ll_searches WHERE player_id=$1 AND status IN ('searching','waitingServer','preparing','ready')`, user).Scan(&active)
 	if err == nil {
@@ -37,7 +41,7 @@ func searchOpen(ctx context.Context, logger runtime.Logger, tx *sql.Tx, user, pa
 		return nil, err
 	}
 	id := token()
-	_, err = tx.ExecContext(ctx, `INSERT INTO ll_searches(id,player_id,faction,protocol,rules,content_hash,status,rating_at_search) VALUES($1,$2,$3,$4,$5,$6,'searching',$7)`, id, user, req.Faction, req.Protocol, req.Rules, req.ContentHash, rating.Rating)
+	_, err = tx.ExecContext(ctx, `INSERT INTO ll_searches(id,player_id,faction,protocol,rules,content_hash,status,rating_at_search,game_version) VALUES($1,$2,$3,$4,$5,$6,'searching',$7,$8)`, id, user, req.Faction, req.Protocol, req.Rules, req.ContentHash, rating.Rating, req.GameVersion)
 	return map[string]any{"searchId": id, "rating": rating.Rating, "searchRadius": 100, "queueRevision": 0}, err
 }
 

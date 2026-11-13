@@ -9613,6 +9613,11 @@
       "key": "Restores up to 70 health to allied units in the target area. Does not heal structures.",
       "value": "Restaura hasta 70 de vida a unidades aliadas en el área seleccionada. No cura estructuras.",
       "template": false
+    },
+    {
+      "key": "Update required. Install the latest version of Little Legion to play online.",
+      "value": "Actualización necesaria. Instala la última versión de Little Legion para jugar online.",
+      "template": false
     }
   ]
 }

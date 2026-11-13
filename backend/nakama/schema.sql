@@ -54,3 +54,6 @@ CREATE TABLE IF NOT EXISTS ll_rating_outbox (
   player_id TEXT PRIMARY KEY REFERENCES ll_ratings(player_id),
   version BIGINT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Existing searches have no release identity and cannot re-enter a new queue.
+ALTER TABLE ll_searches ADD COLUMN IF NOT EXISTS game_version text NOT NULL DEFAULT '';

@@ -36,6 +36,9 @@ func serverRegister(ctx context.Context, logger runtime.Logger, tx *sql.Tx, user
 	if strings.Contains(req.Host, ":") && net.ParseIP(req.Host) == nil {
 		return nil, invalid("Host must not include a port")
 	}
+	if err := requireReleaseContent(req.Protocol, req.Rules, req.ContentHash); err != nil {
+		return nil, err
+	}
 	var boot, lease, matchID, host, hash string
 	var port, protocol, rules int
 	var active bool

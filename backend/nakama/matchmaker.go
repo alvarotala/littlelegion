@@ -27,11 +27,11 @@ func beforeMatchmaker(ctx context.Context, logger runtime.Logger, db *sql.DB, nk
 		return nil, internal(logger, err)
 	}
 	var protocol, rules int
-	var hash, queueSession string
+	var hash, queueSession, gameVersion string
 	var rating int
 	var age float64
 	searchID := req.StringProperties["searchId"]
-	err = tx.QueryRowContext(ctx, `SELECT protocol,rules,content_hash,queue_session,rating_at_search,extract(epoch FROM now()-created_at) FROM ll_searches WHERE id=$1 AND player_id=$2 AND status='searching'`, searchID, user).Scan(&protocol, &rules, &hash, &queueSession, &rating, &age)
+	err = tx.QueryRowContext(ctx, `SELECT protocol,rules,content_hash,queue_session,rating_at_search,extract(epoch FROM now()-created_at),game_version FROM ll_searches WHERE id=$1 AND player_id=$2 AND status='searching'`, searchID, user).Scan(&protocol, &rules, &hash, &queueSession, &rating, &age, &gameVersion)
 	if err == sql.ErrNoRows {
 		return nil, denied("Open your own search first")
 	}
@@ -39,6 +39,9 @@ func beforeMatchmaker(ctx context.Context, logger runtime.Logger, db *sql.DB, nk
 		return nil, internal(logger, err)
 	}
 	expected := compat(protocol, rules, hash)
+	if err := requireClientRelease(gameVersion, protocol, rules, hash); err != nil {
+		return nil, err
+	}
 	if req.StringProperties["compat"] != expected {
 		return nil, denied("Search compatibility does not match")
 	}
@@ -90,9 +93,9 @@ func matchmakerMatched(ctx context.Context, logger runtime.Logger, db *sql.DB, n
 		p.user = entry.GetPresence().GetUserId()
 		p.session = entry.GetPresence().GetSessionId()
 		p.searchID, _ = entry.GetProperties()["searchId"].(string)
-		var queued string
+		var queued, gameVersion string
 		var age float64
-		err = tx.QueryRowContext(ctx, `SELECT faction,protocol,rules,content_hash,queue_session,rating_at_search,extract(epoch FROM now()-created_at) FROM ll_searches WHERE id=$1 AND player_id=$2 AND status='searching'`, p.searchID, p.user).Scan(&p.faction, &p.protocol, &p.rules, &p.content, &queued, &p.rating, &age)
+		err = tx.QueryRowContext(ctx, `SELECT faction,protocol,rules,content_hash,queue_session,rating_at_search,extract(epoch FROM now()-created_at),game_version FROM ll_searches WHERE id=$1 AND player_id=$2 AND status='searching'`, p.searchID, p.user).Scan(&p.faction, &p.protocol, &p.rules, &p.content, &queued, &p.rating, &age, &gameVersion)
 		if err == sql.ErrNoRows {
 			valid = false
 			continue
@@ -104,7 +107,7 @@ func matchmakerMatched(ctx context.Context, logger runtime.Logger, db *sql.DB, n
 		supplied, _ := entry.GetProperties()["compat"].(string)
 		suppliedRating, ratingOK := entry.GetProperties()["rating"].(float64)
 		p.radius = searchRadius(age)
-		if queued != p.session || supplied != compat(p.protocol, p.rules, p.content) || !ratingOK || suppliedRating != float64(p.rating) {
+		if requireClientRelease(gameVersion, p.protocol, p.rules, p.content) != nil || queued != p.session || supplied != compat(p.protocol, p.rules, p.content) || !ratingOK || suppliedRating != float64(p.rating) {
 			valid = false
 		}
 	}

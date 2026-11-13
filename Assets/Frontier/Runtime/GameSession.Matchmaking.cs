@@ -49,6 +49,10 @@ namespace Frontier.Runtime
             {
                 if(CurrentPublicSearch(generation,cancellation))FailPublicSearch("The search timed out. Try again.");
             }
+            catch(OnlineUpdateRequiredException)
+            {
+                if(CurrentPublicSearch(generation,cancellation))FailPublicSearch(OnlineUpdateRequiredException.Notice);
+            }
             catch(Exception)
             {
                 // Never display credentials, raw transport exceptions or server response bodies.

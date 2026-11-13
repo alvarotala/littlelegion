@@ -3,12 +3,12 @@ using UnityEngine.UI;
 
 namespace Frontier.Runtime
 {
-    // Small console symbols built from flat UI triangles. Graphic.color supplies the
+    // Small UI symbols built from flat triangles. Graphic.color supplies the
     // primary ink; the second tone stays flat, with no texture, outline or text glyph.
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class ConsoleGlyph : MaskableGraphic
     {
-        public enum Kind { Mineral, Gas, Supply, Reset, Pause, Group, Tutorial, Guide, History }
+        public enum Kind { Mineral, Gas, Supply, Reset, Pause, Group, Tutorial, Guide, History, Construction }
 
         [SerializeField] private Kind glyph;
         public Kind Glyph
@@ -91,6 +91,12 @@ namespace Frontier.Runtime
                     }
                     Stroke(Vector2.zero,new Vector2(0,.23f),.07f,ink);
                     Stroke(Vector2.zero,new Vector2(.18f,-.10f),.07f,ink);
+                    break;
+                case Kind.Construction:
+                    // A small hammer, matching the existing resource symbols' flat geometry.
+                    Stroke(new Vector2(-.27f,-.34f),new Vector2(.16f,.19f),.15f,shade);
+                    Quad(new Vector2(-.12f,.34f),new Vector2(.29f,.01f),
+                        new Vector2(.44f,.20f),new Vector2(.03f,.49f),ink);
                     break;
             }
 

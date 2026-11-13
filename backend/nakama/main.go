@@ -55,6 +55,7 @@ func InitModule(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runti
 		server bool
 		fn     rpcFunc
 	}{
+		{"ll_client_policy", false, clientPolicy},
 		{"ll_search_open", false, searchOpen}, {"ll_search_status", false, searchStatus}, {"ll_search_cancel", false, searchCancel},
 		{"ll_rank_result", false, rankMatchResult},
 		{"ll_server_register", true, serverRegister}, {"ll_server_poll", true, serverPoll}, {"ll_server_admit", true, serverAdmit}, {"ll_server_event", true, serverEvent},

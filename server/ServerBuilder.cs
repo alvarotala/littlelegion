@@ -10,6 +10,8 @@ namespace Frontier.Dedicated.Editor
 {
     public static class ServerBuilder
     {
+        [Serializable]
+        private sealed class ReleasePolicy { public string version,contentHash; public int protocol,rules; }
         public static void BuildLinux()
         {
             string[] args = Environment.GetCommandLineArgs();
@@ -21,6 +23,12 @@ namespace Frontier.Dedicated.Editor
 
             PlayerSettings.companyName = "Frontier";
             PlayerSettings.productName = "Little Legion Server";
+            var release=JsonUtility.FromJson<ReleasePolicy>(Resources.Load<TextAsset>("online-release").text);
+            if(release.protocol!=Networking.MatchCompatibility.Protocol||release.rules!=Networking.MatchCompatibility.Rules
+                ||release.contentHash!=Networking.MatchCompatibility.ContentHash)
+                throw new BuildFailedException("Server content does not match the required online release.");
+            PlayerSettings.bundleVersion=release.version;
+            Debug.Log("FRONTIER_ONLINE_RELEASE_VALID "+release.version+" "+Networking.MatchCompatibility.Key);
             PlayerSettings.runInBackground = true;
             // The trusted control plane uses HTTP on the private Docker network.
             PlayerSettings.insecureHttpOption = InsecureHttpOption.AlwaysAllowed;

@@ -21,8 +21,8 @@ import integration as base
 check = base.check
 OWN_PLAYERS = set()
 OWN_SEARCHES = set()
-COMPOSE = ["docker", "compose", "--env-file", str(base.ROOT / ".cache/online/env"),
-           "-f", str(base.ROOT / "compose.online.yml")]
+COMPOSE = ["docker", "compose", "--env-file", str(base.ENV_PATH),
+           "-f", str(base.COMPOSE_PATH)]
 RATING_KEYS = ("rating", "games", "wins", "losses", "draws")
 
 
@@ -66,7 +66,7 @@ def seed_rating(value, rating):
 
 
 def open_search(value, faction="industrial"):
-    opened = base.rpc("ll_search_open", {**base.COMPAT, "faction": faction}, value)
+    opened = base.rpc("ll_search_open", {**base.COMPAT, "gameVersion": base.RELEASE["version"], "faction": faction}, value)
     sid = opened["searchId"]
     assert re.fullmatch(r"[A-Za-z0-9_-]{43}", sid)
     OWN_SEARCHES.add((sid, value["uid"]))
@@ -196,8 +196,8 @@ def assert_searching(first, second, sa, sb):
 def main():
     if subprocess.check_output(COMPOSE + ["ps", "--status", "running", "-q", "server"], text=True).strip():
         raise SystemExit("Stop the online NGO slot before ranking validation; leave LAN running.")
-    # Isolate test matchmaking from users and the ordinary backend regression suite.
-    base.COMPAT["contentHash"] = "ranking-" + uuid.uuid4().hex
+    # The server requires the real release fingerprint. Run this suite against
+    # an isolated stack via LL_TEST_ENV / LL_TEST_COMPOSE, never a public queue.
     agent = None
     try:
         a, b, outsider = player(), player(), player()

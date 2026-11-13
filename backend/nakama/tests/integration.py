@@ -21,9 +21,12 @@ import urllib.request
 import uuid
 
 ROOT = Path(__file__).resolve().parents[3]
-ENV = dict(line.split("=", 1) for line in (ROOT / ".cache/online/env").read_text().splitlines() if "=" in line)
+ENV_PATH = Path(os.environ.get("LL_TEST_ENV", ROOT / ".cache/online/env"))
+COMPOSE_PATH = Path(os.environ.get("LL_TEST_COMPOSE", ROOT / "compose.online.yml"))
+ENV = dict(line.split("=", 1) for line in ENV_PATH.read_text().splitlines() if "=" in line)
 BASE = "http://127.0.0.1:" + ENV.get("LL_API_PORT", "7350")
-COMPAT = {"protocol": 3, "rules": 4, "contentHash": "integration-v1"}
+RELEASE = json.loads((ROOT / "backend/nakama/release.json").read_text())
+COMPAT = {key: RELEASE[key] for key in ("protocol", "rules", "contentHash")}
 SOCKETS = []
 CHECKS = 0
 
@@ -140,11 +143,11 @@ class WebSocket:
 
 
 def open_search(player, faction="industrial"):
-    return rpc("ll_search_open", {**COMPAT, "faction": faction}, player)["searchId"]
+    return rpc("ll_search_open", {**COMPAT, "gameVersion": RELEASE["version"], "faction": faction}, player)["searchId"]
 
 
 def queue(ws, search_id, compatibility=None, fail=False):
-    props = {"searchId": search_id, "compat": compatibility or "3:4:integration-v1"}
+    props = {"searchId": search_id, "compat": compatibility or f"{COMPAT['protocol']}:{COMPAT['rules']}:{COMPAT['contentHash']}"}
     return ws.request("matchmaker_add", {"min_count": 2, "max_count": 2, "query": "*", "string_properties": props}, fail)
 
 
@@ -223,7 +226,7 @@ def age_fixture(compose, table, identifier, column):
 
 
 def main():
-    compose = ["docker", "compose", "--env-file", str(ROOT / ".cache/online/env"), "-f", str(ROOT / "compose.online.yml")]
+    compose = ["docker", "compose", "--env-file", str(ENV_PATH), "-f", str(COMPOSE_PATH)]
     live = subprocess.check_output(compose + ["ps", "--status", "running", "-q", "server"], text=True).strip()
     if live:
         raise SystemExit("Stop the online NGO slot before the fake-agent test; leave the LAN stack running.")
@@ -234,6 +237,16 @@ def main():
         basic = "Basic " + base64.b64encode(b"littlelegion:").decode()
         refreshed = http("/v2/account/session/refresh", {"token": a["refresh_token"]}, basic)
         check(bool(refreshed["token"]), "Refresh token restores session")
+        policy = rpc("ll_client_policy", {}, a)
+        check(policy == RELEASE, "Authenticated policy announces the exact required release")
+        for version in (None, "0.1.12", "99.0.0"):
+            request = {**COMPAT, "faction": "industrial"}
+            if version is not None:
+                request["gameVersion"] = version
+            expect_denied(lambda: rpc("ll_search_open", request, a), "Old/missing/future game version cannot search")
+        for field, value in (("protocol", COMPAT["protocol"] - 1), ("rules", COMPAT["rules"] - 1), ("contentHash", "0" * 64)):
+            request = {**COMPAT, "gameVersion": RELEASE["version"], "faction": "industrial", field: value}
+            expect_denied(lambda: rpc("ll_search_open", request, a), "Current version cannot bypass " + field)
         expect_denied(lambda: rpc("ll_server_register", {"serverId": "local-1"}, a), "Player cannot register a server")
         expect_denied(lambda: rpc("ll_search_open", {**COMPAT, "faction": "industrial"}, server=True), "Server key cannot impersonate player")
         expect_denied(lambda: rpc("ll_server_poll", {}), "Anonymous cannot access server API")

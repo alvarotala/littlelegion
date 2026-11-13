@@ -25,6 +25,18 @@ namespace Frontier.Editor
             int checks=0;
             try
             {
+                NakamaMatchmaker.ValidateClientPolicy(Application.version,MatchCompatibility.Protocol,MatchCompatibility.Rules,MatchCompatibility.ContentHash);
+                checks++;
+                foreach(var mismatchKind in new[]{"version","protocol","rules","content"})
+                {
+                    bool update=false;
+                    try { NakamaMatchmaker.ValidateClientPolicy(mismatchKind=="version"?"99.0.0":Application.version,
+                        MatchCompatibility.Protocol+(mismatchKind=="protocol"?1:0),MatchCompatibility.Rules+(mismatchKind=="rules"?1:0),
+                        mismatchKind=="content"?new string('0',64):MatchCompatibility.ContentHash); }
+                    catch(OnlineUpdateRequiredException) { update=true; }
+                    if(!update)throw new Exception("Incompatible online "+mismatchKind+" did not require an update.");
+                    checks++;
+                }
                 var session=fixture.AddComponent<GameSession>();
                 if(session.Catalog==null)Call("Awake");
                 session.LoadMap("training");
@@ -59,6 +71,13 @@ namespace Frontier.Editor
                 Check(failure.IsCompleted&&!failure.IsFaulted&&!session.IsConnecting&&!session.IsOnline&&session.MessageIsError,
                     "An authentication/search failure is handled and leaves retry available.");
                 Check(!session.NetworkStatus.Contains("sensitive")&&provider.CancelCalls==1,"Failures expose only safe feedback and cancel the search.");
+
+                provider=new FakeMatchmaker();Task outdated=session.FindPublicMatchAsync();
+                provider.Completion.SetException(new OnlineUpdateRequiredException());
+                Check(outdated.IsCompleted&&!outdated.IsFaulted&&!session.IsOnline&&!session.IsConnecting&&provider.CancelCalls==1,
+                    "An outdated client exits matchmaking and releases the pending search.");
+                Check(session.NetworkStatus==OnlineUpdateRequiredException.Notice&&session.MessageIsError,
+                    "The menu explains that the game must be updated instead of showing a generic connection failure.");
 
                 provider=new FakeMatchmaker();Task invalid=session.FindPublicMatchAsync();
                 var bad=Connection();bad.port=0;provider.Completion.SetResult(bad);

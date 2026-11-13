@@ -100,13 +100,17 @@ namespace Frontier.Editor
                     Check(readyMaterials.Any(m => !Gray(m.GetColor("_BaseColor"))), "Finished structures retain their normal colors " + faction);
                     Check(Marker(1000) != null && Marker(1001) != null && Marker(1002) == null, "Only unfinished buildings have construction labels " + faction);
                     Check(Marker(1000).Find("Construction percent").GetComponent<Text>().text == "20%" && Marker(1001).Find("Construction percent").GetComponent<Text>().text == "65%", "Labels display actual progress " + faction);
-                    Check(Marker(1000).Find("Availability").GetComponent<Text>().text == "NO RESOURCE DELIVERY YET", "Unfinished base explains why workers cannot deposit " + faction);
+                    Check(Marker(1000).GetComponentsInChildren<Text>().Length == 1 &&
+                        Marker(1000).Find("Status icon").GetComponent<ConsoleGlyph>().Glyph == ConsoleGlyph.Kind.Construction,
+                        "Construction badge shows only its hammer and numeric progress " + faction);
                     CaptureBoard(faction + "-construction-stages");
                     actors[0].progress = 0; actors[0].awaitingClearance = true; Publish(); Invoke(board, "LateUpdate");
-                    Check(Marker(1000).Find("Construction status").GetComponent<Text>().text == "CLEARING AREA", "Reserved site explains why construction is waiting " + faction);
+                    Check(Marker(1000).Find("Status icon").GetComponent<ConsoleGlyph>().Glyph == ConsoleGlyph.Kind.History,
+                        "Reserved site shows a waiting clock " + faction);
                     CaptureBoard(faction + "-clearing-area");
                     actors[0].awaitingClearance = false; Publish(); Invoke(board, "LateUpdate");
-                    Check(Marker(1000).Find("Construction status").GetComponent<Text>().text == "UNDER CONSTRUCTION", "Cleared site restores normal construction label " + faction);
+                    Check(Marker(1000).Find("Status icon").GetComponent<ConsoleGlyph>().Glyph == ConsoleGlyph.Kind.Construction,
+                        "Cleared site restores the construction hammer " + faction);
                     actors[0].progress = .999f; Publish(); Invoke(board, "LateUpdate");
                     Check(Marker(1000).Find("Construction percent").GetComponent<Text>().text == "99%", "Incomplete building never claims 100 percent " + faction);
                     actors[0].complete = true; actors[0].progress = 1; Publish(); Invoke(board, "LateUpdate");
@@ -122,7 +126,7 @@ namespace Frontier.Editor
                     Check(Field<Text>(panel, "selectionDetails").text.Contains("Cannot receive resources yet"), "Selected unfinished base explains delivery state in console " + faction);
                     CapturePanel(faction + "-unfinished-base");
                     session.LeaveMatch();
-                    Check(!board.Content.GetComponentsInChildren<Text>().Any(t => t.text == "UNDER CONSTRUCTION"), "Leaving match removes construction labels " + faction);
+                    Check(!board.Content.GetComponentsInChildren<Canvas>().Any(c => c.name.StartsWith("Construction ")), "Leaving match removes construction labels " + faction);
 
                     Renderer Model(int id) => visuals[id].Find("Building silhouette").GetComponent<Renderer>();
                     Transform Marker(int id) => board.Content.Find("Harvesting counters/Construction " + id);
@@ -138,8 +142,8 @@ namespace Frontier.Editor
                 bool Gray(Color c) => Mathf.Abs(c.r - c.g) < .001f && Mathf.Abs(c.g - c.b) < .001f;
                 void RefreshPanel() { typeof(CommandPanel).GetField("nextText", Private).SetValue(panel, 0f); Invoke(panel, "LateUpdate"); }
                 RectTransform Button(string name) => Field<RectTransform>(panel, "actions").GetComponentsInChildren<RectTransform>().First(t => t.name == name);
-                bool Selected(string name) => Button("Build " + name).GetComponentsInChildren<Text>().Any(t => t.text.StartsWith("SELECTED ·"));
-                int SelectedButtons() => Field<RectTransform>(panel, "actions").GetComponentsInChildren<Text>().Count(t => t.text.StartsWith("SELECTED ·"));
+                bool Selected(string name) => Button("Build " + name).GetComponent<Image>().color == ConsoleTheme.Primary;
+                int SelectedButtons() => Field<RectTransform>(panel, "actions").GetComponentsInChildren<Image>().Count(image => image.name.StartsWith("Build ") && image.color == ConsoleTheme.Primary);
                 void Click(string name)
                 {
                     RefreshPanel(); var rect = Button(name); var hit=rect.GetComponentInChildren<SelectionPortrait>()?.rectTransform??rect;
