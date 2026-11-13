@@ -112,7 +112,8 @@ namespace Frontier.Core
             int plannedCapacity=own.Where(e=>!e.complete&&Type(e).role=="supply").Sum(e=>Type(e).capacity);
             var priorities=new List<string>();
             // Reserve enough supply for all ready producers, not just the next unit.
-            int productionSlots=Math.Max(2,own.Count(e=>e.complete&&catalog.CanProduceUnits(e.definition)));
+            int productionSlots=Math.Max(2,own.Where(e=>e.complete&&catalog.CanProduceUnits(e.definition))
+                .Sum(e=>catalog.Definition.archetypes.Where(t=>t.faction==view.faction&&!t.building&&t.producer==Type(e).role).Max(t=>t.supply)));
             if(view.capacity<Simulation.UnitLimit&&view.supply+productionSlots>=view.capacity+plannedCapacity)priorities.Add("supply");
             if(Count("barracks")==0)priorities.Add("barracks");
             int gasSites=view.resources.Count(r=>r.kind=="catalyst"&&r.remaining!=0
@@ -193,7 +194,7 @@ namespace Frontier.Core
             var assignments=view.resources.ToDictionary(r=>r.id,r=>r.assignedWorkers);
             bool rebalance=view.tick>=economyBalanceAt;
             if(rebalance)economyBalanceAt=view.tick+Seconds(10);
-            int gasTarget=view.catalyst>=200?1:Complete("tech")&&workers.Length>=10?2:1;
+            int gasTarget=view.catalyst>=600?1:workers.Length>=10?3:workers.Length>=8?2:1;
             foreach(var worker in workers.Where(w=>!assignedWorkers.Contains(w.id)&&w.id!=expansionWorker))
             {
                 bool gathering=worker.order==CommandKind.Gather;
@@ -233,14 +234,15 @@ namespace Frontier.Core
             var workerType=catalog.Role(view.faction,"worker");
             foreach(var hq in readyBases.Where(b=>b.queue.Length==0))
             {
-                if(producerCounts["worker"]>=workerGoal||supply>=view.capacity)break;
+                if(producerCounts["worker"]>=workerGoal||supply+workerType.supply>view.capacity)break;
                 if(!ProducerReady(hq.id,view.tick)||!Afford(workerType)||(minerals-saveMinerals<workerType.minerals&&workers.Length>=8))continue;
-                Reserve(workerType);supply++;producerCounts["worker"]++;usedProducers.Add(hq.id);producerReadyAt[hq.id]=view.tick+Seconds(pace.recruit);
+                Reserve(workerType);supply+=workerType.supply;producerCounts["worker"]++;usedProducers.Add(hq.id);producerReadyAt[hq.id]=view.tick+Seconds(pace.recruit);
                 orders.Add(Command(CommandKind.Train,hq.id,definition:workerType.id));
             }
             if(view.tick>=Seconds(pace.research)&&view.tick>=economyResearchAt&&producerCounts["siege"]>0&&militaryCount>=16)
             {
                 var upgrade=catalog.Definition.upgrades.FirstOrDefault(u=>catalog.CanResearch(u,view.researched)
+                    &&(string.IsNullOrEmpty(u.requires)||Complete(u.requires))
                     &&!own.Any(e=>e.queue.Any(q=>q.research&&catalog.Upgrade(q.definition)?.Stat==u.Stat)));
                 var research=own.FirstOrDefault(e=>e.complete&&Type(e).role=="research"&&e.queue.Length<=1&&!e.queue.Any(q=>q.research));
                 if(upgrade!=null&&research!=null&&minerals-saveMinerals>=upgrade.minerals&&catalyst>=upgrade.catalyst)
@@ -253,10 +255,11 @@ namespace Frontier.Core
                 &&!usedProducers.Contains(e.id)&&ProducerReady(e.id,view.tick)).ToList();
             while(readyProducers.Count>0)
             {
-                int army=producerCounts.Where(p=>p.Key!="worker").Sum(p=>p.Value);
+                int army=producerCounts.Where(p=>p.Key!="worker").Sum(p=>p.Value*catalog.Role(view.faction,p.Key).supply);
                 if(army>=armyGoal||supply>=view.capacity)break;
                 var candidate=catalog.Definition.archetypes.Where(t=>!t.building&&t.faction==view.faction&&t.role!="worker"
-                    &&readyProducers.Any(p=>Type(p).role==t.producer)&&(string.IsNullOrEmpty(t.requires)||Complete(t.requires))&&catalyst>=t.catalyst)
+                    &&readyProducers.Any(p=>Type(p).role==t.producer)&&(string.IsNullOrEmpty(t.requires)||Complete(t.requires))&&catalyst>=t.catalyst
+                    &&supply+t.supply<=view.capacity&&army+t.supply<=armyGoal)
                     .OrderBy(t=>producerCounts[t.role]/EconomyWeight(t.role)).ThenBy(t=>t.role=="ranged"?0:t.role=="melee"?1:2).ThenBy(t=>t.minerals).FirstOrDefault();
                 if(candidate==null)break;
                 // Save the next mineral delivery for the biggest unlocked army
@@ -264,7 +267,7 @@ namespace Frontier.Core
                 // nor should expensive support drain a missing infantry frontline.
                 if(minerals-saveMinerals<candidate.minerals)break;
                 var producer=readyProducers.First(p=>Type(p).role==candidate.producer);readyProducers.Remove(producer);
-                Reserve(candidate);supply++;producerCounts[candidate.role]++;producerReadyAt[producer.id]=view.tick+Seconds(pace.recruit);
+                Reserve(candidate);supply+=candidate.supply;producerCounts[candidate.role]++;producerReadyAt[producer.id]=view.tick+Seconds(pace.recruit);
                 orders.Add(Command(CommandKind.Train,producer.id,definition:candidate.id));
             }
             return orders;

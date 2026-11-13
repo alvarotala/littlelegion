@@ -59,7 +59,7 @@ namespace Frontier.Core
                 if (upgrade.Stat == "attack") Players[producer.owner].attackLevel=upgrade.level; else Players[producer.owner].armorLevel=upgrade.level;
                 producer.queue.RemoveAt(0); FinishBuildOrder(producer.owner,order.id,false,BuildOrderStatus.Completed); Notice?.Invoke(producer.owner, "Research complete."); return;
             }
-            if (Units(producer.owner) >= Capacity(producer.owner)) return;
+            if (Population(producer.owner) + Catalog[order.definition].supply > Capacity(producer.owner)) return;
             float radius = Catalog[order.definition].collisionRadius;
             Point? exit = producer.hasRallyPoint ? FreeRallyExit(producer, radius) : FreeExit(producer, radius);
             if (!exit.HasValue) return;
@@ -102,7 +102,13 @@ namespace Frontier.Core
             if (resource == null || KnownRemaining(worker.owner, resource) == 0) { ResumeGather(worker); return; }
             if (resource.kind == "catalyst" && !Extractor(worker.owner, resource)) { ResumeGather(worker); return; }
             if (Travel(worker, resource.position, GatherRange(resource)) && resource.remaining > 0 && Tick % 8 == worker.id % 8)
-            { resource.remaining--; worker.cargo++; worker.cargoKind = resource.kind; }
+            {
+                int assigned = Entities.Values.Count(e => e.owner == worker.owner && e.health > 0 && e.order == CommandKind.Gather && e.resourceId == resource.id);
+                worker.gatherProgress += Harvesting.Efficiency(resource.kind,assigned);
+                if (worker.gatherProgress < 1f) return;
+                worker.gatherProgress -= 1f;
+                resource.remaining--; worker.cargo++; worker.cargoKind = resource.kind;
+            }
         }
         private void Repair(EntityState worker)
         {
@@ -170,7 +176,7 @@ namespace Frontier.Core
             var knownResources = Resources.Where(r => Explored(player, r.position)).Select(r => ObserveResource(player, r, assignments)).ToArray();
             var upgrades = Catalog.Definition.upgrades.Where(u=>(u.Stat=="attack"?Players[player].attackLevel:Players[player].armorLevel)>=u.level).Select(u=>u.id).ToArray();
             return new PlayerView { player = player, tick = Tick, winner = Winner, faction = Players[player].faction, minerals = Players[player].minerals, catalyst = Players[player].catalyst,
-                supply = Units(player) + Reserved(player), capacity = Capacity(player), entities = visible.ToArray(), resources = knownResources, visibility = (byte[])vision[player].Clone(), researched = upgrades,
+                supply = Population(player) + Reserved(player), capacity = Capacity(player), entities = visible.ToArray(), resources = knownResources, visibility = (byte[])vision[player].Clone(), researched = upgrades,
                 abilityEvents = recentAbilities.Where(a => (a.observers & (1<<player)) != 0 && Visible(player,a.origin) && Visible(player,a.effect.position)).Select(a=>ObservedAbility(a.effect,a.ids[player])).ToArray(),
                 deaths = recentDeaths.Where(d => (d.observers & (1<<player)) != 0 && (d.death.owner == player || Visible(player,d.death.position))).Select(d=>d.death).ToArray(),
                 // Never reveal a previously unseen shot when an observer arrives later, or keep a trail in lost vision.

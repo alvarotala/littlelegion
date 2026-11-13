@@ -6,7 +6,7 @@ namespace Frontier.Core
 {
     public sealed partial class Simulation
     {
-        public const int TickRate = 20, UnitLimit = 60, BuildingLimit = 20;
+        public const int TickRate = 20, UnitLimit = 100, BuildingLimit = 30;
         public readonly GridMap Map;
         public readonly Catalog Catalog;
         public readonly PlayerState[] Players = new PlayerState[2];
@@ -60,9 +60,10 @@ namespace Frontier.Core
         }
         public int Units(int player) => Entities.Values.Count(e => e.owner == player && !Type(e).building);
         public int Buildings(int player) => Entities.Values.Count(e => e.owner == player && Type(e).building);
-        public int Reserved(int player) => Entities.Values.Where(e => e.owner == player).Sum(e => e.queue.Count(q => !q.research));
+        public int Population(int player) => Entities.Values.Where(e => e.owner == player && !Type(e).building).Sum(e => Type(e).supply);
+        public int Reserved(int player) => Entities.Values.Where(e => e.owner == player).Sum(e => e.queue.Where(q => !q.research).Sum(q => Catalog[q.definition].supply));
         public int Capacity(int player) => Math.Min(UnitLimit, Entities.Values.Where(e => e.owner == player && e.complete).Sum(e => Type(e).capacity));
-        public bool HasRole(int player, string role) => Entities.Values.Any(e => e.owner == player && e.complete && Type(e).role == role);
+        public bool HasRole(int player, string role) => Entities.Values.Any(e => e.owner == player && e.health > 0 && e.complete && Type(e).role == role);
         public bool Visible(int player, Point position) { int cell = Map.Cell(position); return cell >= 0 && vision[player][cell] == 2; }
         public bool Explored(int player, Point position) { int cell = Map.Cell(position); return cell >= 0 && vision[player][cell] > 0; }
         public bool CanAfford(int player, int minerals, int catalyst) => Players[player].minerals >= minerals && Players[player].catalyst >= catalyst;
@@ -177,7 +178,7 @@ namespace Frontier.Core
             if (!type.building || type.faction != Players[player].faction) return Reject("Invalid building.");
             if (!Finite(command.position)) return Reject("Invalid position.");
             Point position = new Point((float)Math.Floor(command.position.x), (float)Math.Floor(command.position.y));
-            if (Buildings(player) >= BuildingLimit) return Reject("Building limit reached (20).");
+            if (Buildings(player) >= BuildingLimit) return Reject("Building limit reached (" + BuildingLimit + ").");
             if (!deferred && !string.IsNullOrEmpty(type.requires) && !HasRole(player, type.requires)) return Reject("Required building missing.");
             if (!deferred && !CanAfford(player, type.minerals, type.catalyst)) return Reject("Not enough resources.");
             if (!Map.CanPlace(position, type.footprint)) return Reject("Cannot build on this terrain.");
@@ -203,7 +204,7 @@ namespace Frontier.Core
             if (active.research || active.remaining > 0) return false;
             // A finished unit cannot release its queue until it can deploy. Its zero
             // remaining time must not outrank a producer that is still advancing.
-            if (Units(producer.owner) >= Capacity(producer.owner)) return true;
+            if (Population(producer.owner) + Catalog[active.definition].supply > Capacity(producer.owner)) return true;
             float radius = Catalog[active.definition].collisionRadius;
             return !(producer.hasRallyPoint ? FreeRallyExit(producer, radius) : FreeExit(producer, radius)).HasValue;
         }
@@ -220,6 +221,7 @@ namespace Frontier.Core
                 int level=upgrade.Stat=="attack"?Players[player].attackLevel:Players[player].armorLevel;
                 if (level>=upgrade.level || Entities.Values.Any(e => e.owner == player && e.queue.Any(q => q.research && Catalog.Upgrade(q.definition)?.Stat == upgrade.Stat))) return Reject("Upgrade already researched or queued.");
                 if (level!=upgrade.level-1) return Reject("Research the previous level first.");
+                if (!string.IsNullOrEmpty(upgrade.requires) && !HasRole(player,upgrade.requires)) return Reject("Required technology missing.");
                 if (!CanAfford(player, upgrade.minerals, upgrade.catalyst)) return Reject("Not enough resources.");
                 Pay(player, upgrade.minerals, upgrade.catalyst);
                 producer.queue.Add(new ProductionOrder { id = nextProductionOrderIds[player]++, definition = upgrade.id, research = true, remaining = upgrade.duration, total = upgrade.duration });
@@ -233,7 +235,7 @@ namespace Frontier.Core
                 var producer = AvailableProducer(selected, type.producer);
                 if (producer == null) return Reject("Building unavailable or queue full.");
                 if (!string.IsNullOrEmpty(type.requires) && !HasRole(player, type.requires)) return Reject("Required technology missing.");
-                if (Units(player) + Reserved(player) >= Capacity(player)) return Reject("You need more supply.");
+                if (Population(player) + Reserved(player) + type.supply > Capacity(player)) return Reject("You need more supply.");
                 if (!CanAfford(player, type.minerals, type.catalyst)) return Reject("Not enough resources.");
                 Pay(player, type.minerals, type.catalyst);
                 producer.queue.Add(new ProductionOrder { id = nextProductionOrderIds[player]++, definition = type.id, remaining = type.duration, total = type.duration });

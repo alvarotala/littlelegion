@@ -19,6 +19,15 @@ namespace Frontier.Editor
     public static class ProjectBuilder
     {
         private const string ScenePath="Assets/Frontier/Scenes/Frontier.unity";
+        public static void ValidateBalanceRelease()
+        {
+            PlayerSettings.bundleVersion="0.1.13";PlayerSettings.Android.bundleVersionCode=14;
+            AssetDatabase.SaveAssets();
+            UpgradeLevelsPreview.Render();
+            CatalogReferencePreview.ValidateAndRender();
+            LocalizationPreview.Run();
+            Debug.Log("FRONTIER_BALANCE_RELEASE_013_VALIDATED");
+        }
         [MenuItem("Frontier/Configure project")]
         public static void Configure()
         {
@@ -26,7 +35,7 @@ namespace Frontier.Editor
             PlayerSettings.companyName="Frontier";PlayerSettings.productName="Little Legion";
             ConfigureAppIcons();
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"app.sadmonkey.littlelegion");
-            PlayerSettings.bundleVersion="0.1.12";PlayerSettings.Android.bundleVersionCode=13;
+            PlayerSettings.bundleVersion="0.1.13";PlayerSettings.Android.bundleVersionCode=14;
             // Local Nakama playtests use HTTP on private LAN addresses. The public
             // matchmaking client rejects HTTP for Internet endpoints and requires TLS.
             PlayerSettings.insecureHttpOption=InsecureHttpOption.AlwaysAllowed;

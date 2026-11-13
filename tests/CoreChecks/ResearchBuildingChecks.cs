@@ -10,7 +10,7 @@ static class ResearchBuildingChecks
             sim.Players[0].minerals=5000;sim.Players[0].catalyst=5000;
             var type=catalog.Role(faction,"research");
             var worker=sim.Entities.Values.First(e=>e.owner==0&&sim.Type(e).role=="worker");
-            Check(type.building&&type.minerals==150&&type.catalyst==50&&type.duration==30*Simulation.TickRate&&type.requires=="barracks",
+            Check(type.building&&type.minerals==175&&type.catalyst==75&&type.duration==35*Simulation.TickRate&&type.requires=="barracks",
                 "approved cost, time and prerequisite");
             Check(!catalog.CanProduceUnits(type.id),"research does not train units or qualify for a rally point");
             int minerals=sim.Players[0].minerals,gas=sim.Players[0].catalyst;
@@ -19,7 +19,7 @@ static class ResearchBuildingChecks
             Check(!Build(new Point(18,8)),"unfinished barracks does not unlock research building");barracks.complete=true;
             bool built=false;
             for(int y=2;y<30&&!built;y++)for(int x=2;x<30&&!built;x++)built=Build(new Point(x,y));
-            Check(built&&sim.Players[0].minerals==minerals-150&&sim.Players[0].catalyst==gas-50,"valid research foundation charges the approved cost once");
+            Check(built&&sim.Players[0].minerals==minerals-type.minerals&&sim.Players[0].catalyst==gas-type.catalyst,"valid research foundation charges the approved cost once");
             var lab=sim.Entities.Values.Single(e=>e.owner==0&&e.definition==type.id);
             Check(!Send(CommandKind.Research,lab,"attack"),"unfinished lab rejects upgrades");
             for(int i=0;i<1800&&!lab.complete;i++)sim.Step();
@@ -45,9 +45,18 @@ static class ResearchBuildingChecks
                 for(int level=2;level<=3;level++)
                 {
                     var upgrade=catalog.Upgrade(stat+level);var view=sim.View(0);
-                    Check(upgrade.level==level&&upgrade.Stat==stat&&upgrade.minerals==(level==2?225:300)&&upgrade.catalyst==(level==2?150:200)
-                        &&upgrade.duration==35*Simulation.TickRate,stat+": approved progressive cost and unchanged duration at level "+level);
+                    Check(upgrade.level==level&&upgrade.Stat==stat&&upgrade.minerals==(level==2?275:400)&&upgrade.catalyst==(level==2?200:300)
+                        &&upgrade.duration==(level==2?65:90)*Simulation.TickRate,stat+": approved progressive cost and duration at level "+level);
                     Check(catalog.CanResearch(upgrade,view.researched),stat+": completed previous level unlocks the next option");
+                    if(stat=="attack")
+                    {
+                        EntityState prerequisite=level==2?tech:Add("academy",1004,new Point(28,18));
+                        prerequisite.complete=false;
+                        int heldMinerals=sim.Players[0].minerals,heldGas=sim.Players[0].catalyst;
+                        Check(!Send(CommandKind.Research,lab,upgrade.id)&&sim.Players[0].minerals==heldMinerals&&sim.Players[0].catalyst==heldGas,
+                            stat+": unfinished technology rejects research without payment");
+                        prerequisite.complete=true;
+                    }
                     beforeMinerals=sim.Players[0].minerals;beforeGas=sim.Players[0].catalyst;
                     Check(Send(CommandKind.Research,lab,upgrade.id)&&lab.queue.Single().definition==upgrade.id
                         &&sim.Players[0].minerals==beforeMinerals-upgrade.minerals&&sim.Players[0].catalyst==beforeGas-upgrade.catalyst,

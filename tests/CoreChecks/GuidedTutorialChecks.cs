@@ -104,10 +104,10 @@ static class GuidedTutorialChecks
                 label + ": complete guided route wins through ordinary combat without bots or stat changes");
             check(guide.StepCount == 13 && seen.Count == guide.StepCount - 1,
                 label + ": all basic lessons are reached in order before victory");
-            check(sim.Units(0) == 10 && sim.Capacity(0) == 20 && sim.Players[0].catalyst == 0 && !sim.HasRole(0, "extractor")
+            check(sim.Units(0) == 10 && sim.Capacity(0) == 25 && sim.Players[0].catalyst == 0 && !sim.HasRole(0, "extractor")
                 && sim.Resources.Sum(r => r.remaining) < map.resources.Sum(r => r.amount),
                 label + ": real harvesting, construction, supply and production support the full tutorial");
-            check(catalog.Role(faction, "hq").health == 1400 && catalog.Role(faction, "ranged").duration == 260,
+            check(catalog.Role(faction, "hq").health == 2400 && catalog.Role(faction, "ranged").duration == 360,
                 label + ": tutorial does not change catalog combat or training rules");
 
             EntityState Own(string role) => sim.Entities.Values.First(e => e.owner == 0 && sim.Type(e).role == role);

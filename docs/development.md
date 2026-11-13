@@ -68,7 +68,7 @@ Para comparar versiones de la IA bajo las mismas reglas, `bash scripts/check-ai.
 
 `--difficulty=all --limit=48 --development` ejecuta la matriz completa y doce escenarios económicos de doce minutos. Los escenarios económicos desactivan el daño para observar expansiones aunque la ofensiva ganaría antes; se registran aparte de las victorias competitivas. `--opponent=current --difficulty=Hard --legacy-difficulty=Normal --pair=mirrors --limit=8` compara los niveles actuales en ambos mapas, lados y facciones. Cada ejecución compila una copia congelada de fuentes y datos en `TestResults/ai-snapshots`, conservando sus hashes para que los resultados no se confundan con cambios posteriores.
 
-Incluye regresiones de navegación: 60 unidades de ambas facciones, destinos en una esquina, tráfico opuesto, aliados quietos, mantener posición, bloqueo enemigo, edificios nuevos, rampas y doce trabajadores en el mismo recurso. En cada paso verifican separación, límites de velocidad y permanencia sobre terreno transitable.
+Incluye regresiones de navegación: 100 unidades de ambas facciones, destinos en una esquina, tráfico opuesto, aliados quietos, mantener posición, bloqueo enemigo, edificios nuevos, rampas y doce trabajadores en el mismo recurso. En cada paso verifican separación, límites de velocidad y permanencia sobre terreno transitable.
 
 `PathfindingChecks` añade grupos mixtos por corredores largos, selecciones solapadas, unidades estacionadas junto a una salida y convoyes de distintas velocidades. `CollisionChecks` comprueba masa, empujes, aceleración, frenado, Hold y nuevas órdenes durante una cesión. Parámetros y decisiones: [movimiento](movement.md).
 

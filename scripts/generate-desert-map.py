@@ -73,7 +73,7 @@ def generate():
     gas = [(-9, -3), (8, -3)]
     for pair_index, (cx, cy) in enumerate(CAMP_CENTERS):
         first = pair_index*2
-        for kind, positions, amount in [("mineral", minerals, 1800), ("catalyst", gas, 2400)]:
+        for kind, positions, amount in [("mineral", minerals, 3600), ("catalyst", gas, 4800)]:
             for index, (dx, dy) in enumerate(positions):
                 x, y = cx+dx, cy+dy
                 suffix = kind+str(index)

@@ -8,6 +8,14 @@ namespace Frontier.Core
     {
         public const float SearchRadius = 14, BaseRadius = 18;
         public static int OptimalWorkers(string kind) => kind == "catalyst" ? 3 : 2;
+        // Excess workers share at most 25% extra extraction. Counts include delivery
+        // trips, so oversaturating one camp cannot replace expanding to fresh deposits.
+        public static float Efficiency(string kind, int assigned)
+        {
+            int optimal = OptimalWorkers(kind);
+            if (assigned <= optimal) return 1f;
+            return (optimal + Math.Min(assigned - optimal, optimal) * .25f) / assigned;
+        }
     }
 
     public sealed partial class Simulation

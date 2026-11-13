@@ -116,13 +116,16 @@ static class CombatBehaviorChecks
                 var sim = Fixture(catalog,faction);
                 var front = Unit(sim,0,"ranged",new Point(35.5f,20.5f));
                 var rear = new List<EntityState>();
+                int columns = Math.Max(3,(int)Math.Ceiling((groupSize-1)/20f));
                 for(int i=0;i<groupSize-1;i++)rear.Add(Unit(sim,0,i%3==0?"siege":i%3==1?"ranged":"melee",
-                    new Point(13.5f+i%3*1.5f,14.5f+i/3*1.5f)));
+                    new Point(13.5f+i%columns*1.5f,14.5f+i/columns*1.5f)));
                 var focus = Unit(sim,1,"worker",new Point(40.5f,20.5f));
                 var defenders = new List<EntityState>();
                 for(int i=0;i<18;i++)defenders.Add(Unit(sim,1,"ranged",new Point(43.5f+i%3*1.5f,13.5f+i/3*2)));
                 Warm(sim); focus.health=1;
                 var army = rear.Prepend(front).ToArray();
+                check(army.All(u=>sim.Map.CanStand(u.position,sim.Type(u).collisionRadius)),
+                    faction + " " + groupSize + "-unit group: the fixture fits inside the battlefield");
                 var command = new GameCommand{player=0,kind=CommandKind.Attack,entities=army.Select(u=>u.id).ToArray(),target=focus.id};
                 if(!sim.Submit(command).accepted)throw new Exception("Group focus fixture rejected");
                 foreach(var unit in army)unit.attackReadyTick=0;

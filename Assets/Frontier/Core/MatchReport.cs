@@ -153,7 +153,7 @@ namespace Frontier.Core
             var c=matchCounters[player];
             var pending=kind==CommandKind.Build?c.construction:c.production;
             pending.Add(id,c.orders.Count);
-            c.orders.Add(new BuildOrderEntry(Tick,Units(player)+Reserved(player),definition,kind,BuildOrderStatus.Pending,-1));
+            c.orders.Add(new BuildOrderEntry(Tick,Population(player)+Reserved(player),definition,kind,BuildOrderStatus.Pending,-1));
         }
         private void FinishBuildOrder(int player, int id, bool construction, BuildOrderStatus status)
         {

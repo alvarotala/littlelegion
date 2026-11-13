@@ -190,7 +190,7 @@ namespace Frontier.Core
         {
             var type=Type(e);float health=Math.Max(0,Math.Min(1,e.health/type.health));
             float dps=type.damage*Simulation.TickRate/Math.Max(1,type.attackPeriod);
-            if(type.abilities.Length>0&&e.owner==player&&e.energy>=40)dps+=8;
+            if(type.abilities.Length>0&&e.owner==player&&type.abilities.Any(id=>e.energy>=catalog.Ability(id).energyCost))dps+=8;
             return Math.Max(2,dps)*(float)Math.Sqrt(type.health/100)*(.35f+.65f*health);
         }
         private static Point ArmyCenter(VisibleEntity[] units)=>units.Length==0?default:new Point(units.Average(e=>e.position.x),units.Average(e=>e.position.y));

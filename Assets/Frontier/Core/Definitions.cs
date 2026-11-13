@@ -79,7 +79,7 @@ namespace Frontier.Core
     [Serializable] public sealed class AbilityCooldown { public string ability; public int readyTick; }
     [Serializable] public sealed class UpgradeDefinition
     {
-        public string id, name, stat;
+        public string id, name, stat, requires;
         public int level = 1;
         public int minerals = 150, catalyst = 75, duration = 600;
         public string Stat => string.IsNullOrEmpty(stat) ? id : stat;
@@ -116,7 +116,8 @@ namespace Frontier.Core
                     || !Nonnegative(type.energyMax) || !Nonnegative(type.energyRegen) || type.abilities == null
                     || (!type.building && (!Positive(type.collisionRadius) || type.collisionRadius > .49f
                         || !Positive(type.collisionMass) || !Positive(type.acceleration) || !Positive(type.deceleration)))
-                    || type.duration < 1 || type.attackPeriod < 1 || type.footprint < 1 || type.footprint > 8 || type.minerals < 0 || type.catalyst < 0 || type.capacity < 0)
+                    || type.duration < 1 || type.attackPeriod < 1 || type.footprint < 1 || type.footprint > 8 || type.minerals < 0 || type.catalyst < 0 || type.capacity < 0
+                    || (type.building ? type.supply != 0 : type.supply < 1 || type.supply > Simulation.UnitLimit))
                     throw new ArgumentException("Invalid definition: " + type?.id);
                 types.Add(type.id, type);
                 var assigned = new HashSet<string>();
@@ -145,7 +146,9 @@ namespace Frontier.Core
             foreach (var upgrade in definition.upgrades)
                 if (upgrade == null || (upgrade.Stat != "attack" && upgrade.Stat != "armor") || upgrade.level < 1 || upgrade.level > 3
                     || upgrade.id != (upgrade.level == 1 ? upgrade.Stat : upgrade.Stat + upgrade.level) || !upgrades.Add(upgrade.id)
-                    || string.IsNullOrWhiteSpace(upgrade.name) || upgrade.minerals < 0 || upgrade.catalyst < 0 || upgrade.duration < 1)
+                    || string.IsNullOrWhiteSpace(upgrade.name) || upgrade.minerals < 0 || upgrade.catalyst < 0 || upgrade.duration < 1
+                    || (!string.IsNullOrEmpty(upgrade.requires) && Array.Exists(definition.factions, faction =>
+                        !Array.Exists(definition.archetypes, type => type.faction == faction.id && type.building && type.role == upgrade.requires))))
                     throw new ArgumentException("Invalid or duplicate upgrade.");
             foreach (var upgrade in definition.upgrades)
                 if (upgrade.level > 1 && !Array.Exists(definition.upgrades, previous => previous.Stat == upgrade.Stat && previous.level == upgrade.level - 1))
@@ -240,6 +243,7 @@ namespace Frontier.Core
         public CommandKind order = CommandKind.Stop;
         public int target, resourceId, cargo;
         public string cargoKind;
+        [NonSerialized] internal float gatherProgress;
         public Point destination;
         public bool hasRallyPoint;
         public Point rallyPoint;

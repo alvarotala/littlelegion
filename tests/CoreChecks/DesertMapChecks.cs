@@ -15,7 +15,7 @@ static class DesertMapChecks
         {
             var camp=groups.Single(g=>g.Key=="camp"+i).ToArray();
             check(camp.Count(r=>r.kind=="mineral")==6&&camp.Count(r=>r.kind=="catalyst")==2
-                &&camp.All(r=>r.amount==(r.kind=="mineral"?1800:2400)),"Desert: six minerals and two gas deposits at camp"+i);
+                &&camp.All(r=>r.amount==(r.kind=="mineral"?3600:4800)),"Desert: six minerals and two gas deposits at camp"+i);
             check(grid.CanPlace(Sites[i],4)&&camp.All(r=>!Inside(r,Sites[i],4)),"Desert: flat, resource-free 4x4 headquarters pad at camp"+i);
             var center=new Point(Sites[i].x+2,Sites[i].y+2);
             check(camp.All(r=>new Point(r.x+.5f,r.y+.5f).Distance(center)<10),"Desert: every deposit sits near the camp"+i+" headquarters pad");

@@ -15,6 +15,13 @@ void Throws(Action action, string name) { try { action(); } catch (ArgumentExcep
 Simulation New(string a = "industrial", string b = "biological") => new Simulation(map, catalog, a, b);
 GameCommand Cmd(CommandKind kind, int id, int player = 0, string definition = null, Point position = default, int target = 0) => new GameCommand { kind = kind, entities = new[] { id }, player = player, definition = definition, position = position, target = target };
 
+if(args.Contains("--balance-only"))
+{
+    BalanceChecks.Run(catalog,Check);
+    Console.WriteLine($"{checks} balance checks passed.");
+    return;
+}
+
 if(args.Contains("--tutorial-only"))
 {
     GuidedTutorialChecks.Run(catalog,training,Check);
@@ -132,6 +139,7 @@ if(args.Contains("--harvesting-only"))
     return;
 }
 
+BalanceChecks.Run(catalog,Check);
 FactionParityChecks.Run(catalog,new[]{map,training},Check);
 GuidedTutorialChecks.Run(catalog,training,Check);
 DesertMapChecks.Run(catalog,desert,map,Check);
@@ -190,7 +198,7 @@ foreach(string faction in new[]{"industrial","biological"})
     var foundation=s.Entities.Values.First(e=>e.owner==0&&e.definition==supply.id);
     Check(!s.Submit(Cmd(CommandKind.Build,worker.id,definition:supply.id,position:new Point(18,14))).accepted&&s.Players[0].minerals==initial-supply.minerals,"occupied footprint rejects without charge "+faction);
     for(int i=0;i<900;i++)s.Step();
-    Check(foundation.complete&&s.Capacity(0)==20,"construction grants supply "+faction);
+    Check(foundation.complete&&s.Capacity(0)==25,"construction grants supply "+faction);
     var barracks=catalog.Role(faction,"barracks");
     Check(s.Submit(Cmd(CommandKind.Build,worker.id,definition:barracks.id,position:new Point(18,8))).accepted,"barracks builds "+faction);
     for(int i=0;i<1000;i++)s.Step();
@@ -200,7 +208,7 @@ foreach(string faction in new[]{"industrial","biological"})
     var lab=s.Entities.Values.First(e=>e.owner==0&&s.Type(e).role=="research");
     Check(lab.complete&&s.Submit(Cmd(CommandKind.Research,lab.id,definition:"attack")).accepted,"research starts "+faction);
     Check(!s.Submit(Cmd(CommandKind.Research,lab.id,definition:"attack")).accepted,"duplicate queued research rejected "+faction);
-    for(int i=0;i<800;i++)s.Step();
+    for(int i=0;i<catalog.Upgrade("attack").duration;i++)s.Step();
     Check(s.Players[0].attackLevel==1&&!s.Submit(Cmd(CommandKind.Research,lab.id,definition:"attack")).accepted,"research applies once "+faction);
     var extractor=catalog.Role(faction,"extractor");
     var gasResource=s.Resources.First(r=>r.definition=="camp0.catalyst");

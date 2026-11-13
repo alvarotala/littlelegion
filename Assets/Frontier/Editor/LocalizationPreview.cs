@@ -162,7 +162,7 @@ namespace Frontier.Editor
                 if(strict)
                 {
                     Check(clipped.Count==0,"All Spanish text fits its layout");
-                    var unchanged=new HashSet<string>{"Arsenal","Audio","Ctrl + 1 / 2 / 3 / 4","Escape","Gas","GAS","LITTLE LEGION","LITTLE","LEGION","APM","Neon Loop","Forest Watch","Desser Alert"};
+                    var unchanged=new HashSet<string>{"BETA","Arsenal","Audio","Ctrl + 1 / 2 / 3 / 4","Escape","Gas","GAS","LITTLE LEGION","LITTLE","LEGION","APM","Neon Loop","Forest Watch","Desser Alert"};
                     Check(missing.All(unchanged.Contains),"Unchanged visible strings are only shared terms, key names and the game title");
                 }
                 Localization.SetPreference("en");if(strict){MenuFlowPreview.Render();ReplaySessionChecks.Run();SpectatorPanelChecks.Run();}

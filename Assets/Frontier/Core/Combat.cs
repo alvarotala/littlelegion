@@ -6,6 +6,10 @@ namespace Frontier.Core
 {
     public sealed partial class Simulation
     {
+        public const float AttackUpgradeBonus = .12f, ArmorUpgradeReduction = .08f;
+        private float WeaponDamage(EntityState unit, EntityState target, float multiplier = 1f)
+            => Math.Max(1,Type(unit).damage * (1 + Players[unit.owner].attackLevel * AttackUpgradeBonus)
+                * multiplier * (1 - Players[target.owner].armorLevel * ArmorUpgradeReduction));
         private bool ValidEnemy(EntityState unit, EntityState enemy) => enemy.owner != unit.owner
             && enemy.health > 0 && Visible(unit.owner, Center(enemy));
 
@@ -195,13 +199,13 @@ namespace Frontier.Core
                 if (!CanFire(unit,target)) return true;
             }
             if (Tick < unit.attackReadyTick) return true;
-            float damage = Math.Max(1,type.damage*(1+Players[unit.owner].attackLevel*.2f)-Players[target.owner].armorLevel*2);
+            float damage = WeaponDamage(unit,target,type.role == "siege" && Type(target).building ? 1.5f : 1f);
             target.health -= damage; target.lastDamageTick = Tick;
             unit.lastShotTick = Tick; unit.attackReadyTick = Tick + type.attackPeriod;
             RecordAttack(unit,target);
             if (type.role == "siege") foreach (var other in Entities.Values)
                 if (other.id != target.id && other.owner != unit.owner && other.health > 0 && Center(other).Distance(Center(target)) < 2)
-                { other.health -= damage * .35f; other.lastDamageTick = Tick; }
+                { other.health -= WeaponDamage(unit,other,.25f); other.lastDamageTick = Tick; }
             return true;
         }
     }

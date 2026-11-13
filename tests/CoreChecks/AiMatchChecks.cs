@@ -170,7 +170,7 @@ static class AiMatchChecks
                     }
                 }
                 for(int player=0;player<2;player++)Sample(sim,catalog,stats[player],tick/Simulation.TickRate,homes[player]);
-                if(sim.Players.Any(p=>p.minerals<0||p.catalyst<0)||Enumerable.Range(0,2).Any(p=>sim.Units(p)+sim.Reserved(p)>Simulation.UnitLimit))
+                if(sim.Players.Any(p=>p.minerals<0||p.catalyst<0)||Enumerable.Range(0,2).Any(p=>sim.Population(p)+sim.Reserved(p)>Simulation.UnitLimit))
                     throw new Exception("AI violated resource or population limits.");
             }
             previous.Clear();
@@ -224,12 +224,12 @@ static class AiMatchChecks
         {
             stats.producerSeconds+=producers.Length;stats.busyProducerSeconds+=busy;
             stats.idleWorkerSeconds+=own.Count(e=>catalog[e.definition].role=="worker"&&e.order==CommandKind.Stop);
-            if(sim.Capacity(stats.side)<Simulation.UnitLimit&&sim.Units(stats.side)+sim.Reserved(stats.side)>=sim.Capacity(stats.side))stats.supplyBlockedSeconds++;
+            if(sim.Capacity(stats.side)<Simulation.UnitLimit&&sim.Population(stats.side)+sim.Reserved(stats.side)>=sim.Capacity(stats.side))stats.supplyBlockedSeconds++;
         }
         if(final||seconds%60==0)
         {
             var sample=new SamplePoint{seconds=seconds,workers=workers,queuedWorkers=queuedWorkers,army=army,queuedArmy=queuedArmy,
-                minerals=sim.Players[stats.side].minerals,catalyst=sim.Players[stats.side].catalyst,supply=sim.Units(stats.side)+sim.Reserved(stats.side),capacity=sim.Capacity(stats.side),
+                minerals=sim.Players[stats.side].minerals,catalyst=sim.Players[stats.side].catalyst,supply=sim.Population(stats.side)+sim.Reserved(stats.side),capacity=sim.Capacity(stats.side),
                 bases=bases,militaryProducers=producers.Length,busyMilitaryProducers=busy,
                 mineralsDelivered=stats.mineralsDelivered,catalystDelivered=stats.catalystDelivered,
                 armyByRole=own.Where(e=>!catalog[e.definition].building&&catalog[e.definition].role!="worker").GroupBy(e=>catalog[e.definition].role).ToDictionary(g=>g.Key,g=>g.Count()),

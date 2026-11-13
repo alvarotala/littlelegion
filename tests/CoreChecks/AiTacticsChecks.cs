@@ -4,7 +4,7 @@ static class AiTacticsChecks
 {
     private static readonly string[] Factions={"industrial","biological"};
     private static readonly (AiDifficulty level,int opening,int scout,int reaction,float share,int max)[] Modes={
-        (AiDifficulty.Easy,300,90,3,.65f,22),(AiDifficulty.Normal,210,60,2,.8f,32),(AiDifficulty.Hard,150,35,1,.95f,38)};
+        (AiDifficulty.Easy,300,90,3,.65f,32),(AiDifficulty.Normal,210,60,2,.8f,54),(AiDifficulty.Hard,150,35,1,.95f,64)};
 
     public static void Run(Catalog catalog,Action<bool,string> check)
     {
@@ -171,7 +171,10 @@ static class AiTacticsChecks
                 if(leftHome>=0&&revealed>=0)break;
             }
             string label="Easy industrial/"+arena.id;
-            check(ordered>=0&&ordered<=90,"Authored-map opening issues the early scout order: "+label+" at="+ordered);
+            // The scouting gate can precede the first scout's production under the
+            // slower opening economy; allow one training cycle and reaction interval.
+            check(ordered>=0&&ordered<=90+catalog.Role("industrial","scout").duration/Simulation.TickRate+3,
+                "Authored-map opening issues the early scout order: "+label+" at="+ordered);
             check(leftHome>=0&&leftHome<=135,"The original scout escapes staged troops and actually leaves home before the assault: "+label+" at="+leftHome);
             check(revealed>=0&&revealed<180,"The early scout actually reveals the enemy headquarters before the main army: "+label+" at="+revealed);
         }

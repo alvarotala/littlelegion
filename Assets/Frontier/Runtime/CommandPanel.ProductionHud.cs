@@ -183,9 +183,9 @@ namespace Frontier.Runtime
                 {
                     // The global supply counter includes reservations. Only existing units
                     // block deployment after training; never mistake a reserved slot for one.
-                    int units=Session.View.entities.Count(e=>e.owner==Session.View.player&&!Session.Catalog[e.definition].building);
+                    int population=Session.View.entities.Where(e=>e.owner==Session.View.player&&!Session.Catalog[e.definition].building).Sum(e=>Session.Catalog[e.definition].supply);
                     productionState.text="1 · WAITING TO DEPLOY";
-                    productionProgress.text=units>=Session.View.capacity?"100% · Needs more supply":"100% · Clear the building exit";
+                    productionProgress.text=population+Session.Catalog[current.definition].supply>Session.View.capacity?"100% · Needs more supply":"100% · Clear the building exit";
                     tint=WarningTint;
                 }
                 productionFill.rectTransform.sizeDelta=new Vector2(320*progress,12);

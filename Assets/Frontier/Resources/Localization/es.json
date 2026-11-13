@@ -52,13 +52,13 @@
       "template": false
     },
     {
-      "key": "Each level adds 20% of base damage to your army and defensive buildings. Complete the previous Firepower level first.",
-      "value": "Cada nivel añade un 20 % del daño base a tu ejército y edificios defensivos. Completa primero el nivel anterior de Potencia de fuego.",
+      "key": "Each level adds 12% of base weapon damage to your army and defensive buildings. Complete the previous Firepower level first.",
+      "value": "Cada nivel añade un 12 % del daño base de las armas de tu ejército y defensas. Completa primero el nivel anterior de Potencia de fuego.",
       "template": false
     },
     {
-      "key": "Each level reduces incoming damage to your units and buildings by 2. Complete the previous Armor level first.",
-      "value": "Cada nivel reduce en 2 el daño recibido por tus unidades y edificios. Completa primero el nivel anterior de Armadura.",
+      "key": "Each level reduces incoming weapon damage to your units and buildings by 8%. Complete the previous Armor level first.",
+      "value": "Cada nivel reduce un 8 % el daño de armas recibido por tus unidades y edificios. Completa primero el nivel anterior de Armadura.",
       "template": false
     },
     {
@@ -3557,8 +3557,8 @@
       "template": false
     },
     {
-      "key": "Shots also damage nearby enemies.\nLong range rewards scouting and protection from faster units.",
-      "value": "Los disparos dañan también a enemigos cercanos.\nSu alcance premia la exploración y la protección ante unidades rápidas.",
+      "key": "50% extra direct damage to buildings; 25% splash damage to nearby enemies.\nLong range rewards scouting and protection from faster units.",
+      "value": "50 % más de daño directo a edificios; 25 % de daño en área a enemigos cercanos.\nEl largo alcance requiere exploración y protección frente a unidades rápidas.",
       "template": false
     },
     {
@@ -3582,8 +3582,8 @@
       "template": false
     },
     {
-      "key": "Slow, long-range artillery. Heavy shots also damage nearby enemies. Protect it with other units.",
-      "value": "Artillería lenta de gran alcance. Sus disparos dañan también a enemigos cercanos. Protégela con otras unidades.",
+      "key": "Slow, long-range artillery. Deals 50% extra direct damage to buildings and 25% splash damage to nearby enemies. Uses 2 supply. Protect it with other units.",
+      "value": "Artillería lenta de largo alcance. Inflige un 50 % más de daño directo a edificios y un 25 % de daño en área a enemigos cercanos. Usa 2 de población. Protégela con otras unidades.",
       "template": false
     },
     {
@@ -5570,8 +5570,8 @@
       "template": true
     },
     {
-      "key": "Capacity is added when construction finishes. Army limit: {0} units.",
-      "value": "La capacidad aumenta al completar la obra. Límite del ejército: {0} unidades.",
+      "key": "Capacity is added when construction finishes. Population limit: {0}. Siege and casters use 2 supply each.",
+      "value": "La capacidad aumenta al terminar la construcción. Límite de población: {0}. Asedio y magos usan 2 cada uno.",
       "template": true
     },
     {
@@ -6215,8 +6215,8 @@
       "template": false
     },
     {
-      "key": "Building limit reached (20).",
-      "value": "Límite de edificios alcanzado (20).",
+      "key": "Building limit reached (30).",
+      "value": "Se alcanzó el límite de edificios (30).",
       "template": false
     },
     {
@@ -9598,6 +9598,21 @@
       "key": "Choose Attack Move in the console with Trigger / {0}.",
       "value": "Elige Avanzar y atacar en el menú con el gatillo / {0}.",
       "template": true
+    },
+    {
+      "key": "Best efficiency: 2 workers per mineral, 3 per gas. Excess workers have diminishing returns.",
+      "value": "Mejor rendimiento: 2 trabajadores por mineral y 3 por gas. Los excedentes tienen rendimiento reducido.",
+      "template": false
+    },
+    {
+      "key": "Deals 55 damage to visible enemies and structures in the target area.",
+      "value": "Inflige 55 de daño a enemigos y estructuras visibles en el área seleccionada.",
+      "template": false
+    },
+    {
+      "key": "Restores up to 70 health to allied units in the target area. Does not heal structures.",
+      "value": "Restaura hasta 70 de vida a unidades aliadas en el área seleccionada. No cura estructuras.",
+      "template": false
     }
   ]
 }

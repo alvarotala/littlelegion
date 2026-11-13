@@ -17,7 +17,7 @@ static class ResourceLayoutChecks
                 var minerals=deposits.Where(r=>r.kind=="mineral").ToArray();var gas=deposits.Single(r=>r.kind=="catalyst");
                 Point At(ResourceDefinition r)=>new Point(r.x+.5f,r.y+.5f);
                 var radii=deposits.Select(r=>At(r).Distance(center)).ToArray();
-                check(minerals.Length==4&&minerals.All(r=>r.amount==1800)&&gas.amount==2400,"Starting camp preserves resource quantities: "+map.id+"/"+spawn.player);
+                check(minerals.Length==4&&minerals.All(r=>r.amount==3600)&&gas.amount==4800,"Starting camp preserves resource quantities: "+map.id+"/"+spawn.player);
                 check(radii.Max()-radii.Min()<.5f&&radii.Min()>6&&radii.Max()<7,"Minerals and gas share a concentric band around HQ: "+map.id+"/"+spawn.player);
                 check(Math.Abs(At(gas).y-center.y)<1&&Math.Abs(At(gas).x-center.x)>6,"Gas sits beside headquarters: "+map.id+"/"+spawn.player);
                 check(Math.Abs(minerals.Average(r=>At(r).x)-center.x)<.001f&&minerals.Select(r=>r.y).Distinct().Count()>1,"Mineral arc is centered and curved: "+map.id+"/"+spawn.player);
@@ -66,8 +66,8 @@ static class ResourceLayoutChecks
         for(int i=0;i<sites.Length;i++)
         {
             var deposits=map.resources.Where(r=>r.id.StartsWith("camp"+(i+2)+".")).ToArray();
-            check(deposits.Count(r=>r.kind=="mineral"&&r.amount==1800)==4
-                &&deposits.Count(r=>r.kind=="catalyst"&&r.amount==2400)==1,
+            check(deposits.Count(r=>r.kind=="mineral"&&r.amount==3600)==4
+                &&deposits.Count(r=>r.kind=="catalyst"&&r.amount==4800)==1,
                 "Neon Loop expansion retains a complete 4m/1g camp: "+i);
             check(grid.CanPlace(sites[i],4)&&!map.resources.Any(r=>Inside(r,sites[i],4)),
                 "Neon Loop expansion has a clear 4x4 headquarters pad: "+i);
@@ -114,7 +114,7 @@ static class ResourceLayoutChecks
             }
             for(int tick=0;tick<1000;tick++)sim.Step();
             check(sim.Players.All(p=>p.catalyst>0)
-                &&sim.Resources.Where(r=>r.definition=="camp2.mineral0"||r.definition=="camp3.mineral0").All(r=>r.remaining<1800),
+                &&sim.Resources.Where(r=>r.definition=="camp2.mineral0"||r.definition=="camp3.mineral0").All(r=>r.remaining<3600),
                 "Neon Loop both expansions harvest minerals and deliver gas: "+faction);
         }
     }

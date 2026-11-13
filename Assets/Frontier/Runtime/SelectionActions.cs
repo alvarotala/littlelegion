@@ -50,8 +50,9 @@ namespace Frontier.Runtime
                         if(!session.Catalog.CanResearch(upgrade,session.View.researched))continue;
                         var captured = upgrade;
                         result.Add("research:" + upgrade.id, upgrade.name, upgrade.name, "Research · " + Cost(upgrade.minerals, upgrade.catalyst), () => session.Send(CommandKind.Research, captured.id), ActionCategory.Research,
-                            upgrade.Stat == "attack" ? "Each level adds 20% of base damage to your army and defensive buildings. Complete the previous Firepower level first." : "Each level reduces incoming damage to your units and buildings by 2. Complete the previous Armor level first.",
-                            Cost(upgrade.minerals, upgrade.catalyst) + " · " + Seconds(upgrade.duration) + " s\nFaction-wide upgrade");
+                            upgrade.Stat == "attack" ? "Each level adds 12% of base weapon damage to your army and defensive buildings. Complete the previous Firepower level first." : "Each level reduces incoming weapon damage to your units and buildings by 8%. Complete the previous Armor level first.",
+                            Cost(upgrade.minerals, upgrade.catalyst) + " · " + Seconds(upgrade.duration) + " s\nFaction-wide upgrade"
+                            + (string.IsNullOrEmpty(upgrade.requires) ? "" : "\nRequires: " + session.Catalog.Role(session.Faction,upgrade.requires).name));
                     }
                 }
                 if(single&&!entity.complete)
@@ -120,7 +121,7 @@ namespace Frontier.Runtime
                 case "scout": return "Fast, lightly armed scout. Explore the map, find resources and spot enemy movements before committing your army.";
                 case "melee": return "Durable close-range fighter. Use it on the front line to engage enemies and protect your ranged units.";
                 case "ranged": return "Ranged attacker. Keep it behind your front line to damage enemies from a safer distance.";
-                case "siege": return "Slow, long-range artillery. Heavy shots also damage nearby enemies. Protect it with other units.";
+                case "siege": return "Slow, long-range artillery. Deals 50% extra direct damage to buildings and 25% splash damage to nearby enemies. Uses 2 supply. Protect it with other units.";
                 case "caster": return "Support caster with regenerating energy. Select it to use area damage and allied healing. Each activation uses one ready caster. Keep it behind the front line.";
                 case "hq": return "Your main base: trains workers and receives gathered resources. Build near new deposits to expand. Adds " + type.capacity + " supply.";
                 case "extractor": return "Build directly over a gas deposit so workers can harvest it. Assign workers after completion; " + Harvesting.OptimalWorkers("catalyst") + " is optimal.";

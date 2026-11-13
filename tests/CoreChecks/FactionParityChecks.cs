@@ -169,7 +169,7 @@ static class FactionParityChecks
         {
             var ability=catalog.Ability(a.Type(caster).abilities.Single(id=>catalog.Ability(id).effect==effect));
             SubmitPair(a,b,Order(caster,CommandKind.Cast,new Point(25.5f,20.5f),definition:ability.id),check,effect+" spell");
-            EqualSteps(a,b,20,check,effect+" spell targets, health, energy and cooldowns");
+            EqualSteps(a,b,120,check,effect+" spell targets, health, energy regeneration and cooldowns");
         }
         check(caster.abilityCooldowns.Count==2&&a.Entities.Values.Single(e=>e.owner==0&&a.Type(e).role=="melee").health>catalog.Role(Factions[0],"melee").health-50,
             "Faction parity: both damage and healing actually execute");

@@ -505,448 +505,448 @@
       "kind": "mineral",
       "x": 12,
       "y": 23,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp1.mineral0",
       "kind": "mineral",
       "x": 147,
       "y": 136,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp0.mineral1",
       "kind": "mineral",
       "x": 15,
       "y": 26,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp1.mineral1",
       "kind": "mineral",
       "x": 144,
       "y": 133,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp0.mineral2",
       "kind": "mineral",
       "x": 18,
       "y": 27,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp1.mineral2",
       "kind": "mineral",
       "x": 141,
       "y": 132,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp0.mineral3",
       "kind": "mineral",
       "x": 21,
       "y": 27,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp1.mineral3",
       "kind": "mineral",
       "x": 138,
       "y": 132,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp0.mineral4",
       "kind": "mineral",
       "x": 24,
       "y": 26,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp1.mineral4",
       "kind": "mineral",
       "x": 135,
       "y": 133,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp0.mineral5",
       "kind": "mineral",
       "x": 27,
       "y": 23,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp1.mineral5",
       "kind": "mineral",
       "x": 132,
       "y": 136,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp0.catalyst0",
       "kind": "catalyst",
       "x": 11,
       "y": 17,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp1.catalyst0",
       "kind": "catalyst",
       "x": 148,
       "y": 142,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp0.catalyst1",
       "kind": "catalyst",
       "x": 28,
       "y": 17,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp1.catalyst1",
       "kind": "catalyst",
       "x": 131,
       "y": 142,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp2.mineral0",
       "kind": "mineral",
       "x": 16,
       "y": 67,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp3.mineral0",
       "kind": "mineral",
       "x": 143,
       "y": 92,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp2.mineral1",
       "kind": "mineral",
       "x": 19,
       "y": 70,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp3.mineral1",
       "kind": "mineral",
       "x": 140,
       "y": 89,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp2.mineral2",
       "kind": "mineral",
       "x": 22,
       "y": 71,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp3.mineral2",
       "kind": "mineral",
       "x": 137,
       "y": 88,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp2.mineral3",
       "kind": "mineral",
       "x": 25,
       "y": 71,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp3.mineral3",
       "kind": "mineral",
       "x": 134,
       "y": 88,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp2.mineral4",
       "kind": "mineral",
       "x": 28,
       "y": 70,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp3.mineral4",
       "kind": "mineral",
       "x": 131,
       "y": 89,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp2.mineral5",
       "kind": "mineral",
       "x": 31,
       "y": 67,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp3.mineral5",
       "kind": "mineral",
       "x": 128,
       "y": 92,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp2.catalyst0",
       "kind": "catalyst",
       "x": 15,
       "y": 61,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp3.catalyst0",
       "kind": "catalyst",
       "x": 144,
       "y": 98,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp2.catalyst1",
       "kind": "catalyst",
       "x": 32,
       "y": 61,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp3.catalyst1",
       "kind": "catalyst",
       "x": 127,
       "y": 98,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp4.mineral0",
       "kind": "mineral",
       "x": 40,
       "y": 115,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp5.mineral0",
       "kind": "mineral",
       "x": 119,
       "y": 44,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp4.mineral1",
       "kind": "mineral",
       "x": 43,
       "y": 118,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp5.mineral1",
       "kind": "mineral",
       "x": 116,
       "y": 41,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp4.mineral2",
       "kind": "mineral",
       "x": 46,
       "y": 119,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp5.mineral2",
       "kind": "mineral",
       "x": 113,
       "y": 40,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp4.mineral3",
       "kind": "mineral",
       "x": 49,
       "y": 119,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp5.mineral3",
       "kind": "mineral",
       "x": 110,
       "y": 40,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp4.mineral4",
       "kind": "mineral",
       "x": 52,
       "y": 118,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp5.mineral4",
       "kind": "mineral",
       "x": 107,
       "y": 41,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp4.mineral5",
       "kind": "mineral",
       "x": 55,
       "y": 115,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp5.mineral5",
       "kind": "mineral",
       "x": 104,
       "y": 44,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp4.catalyst0",
       "kind": "catalyst",
       "x": 39,
       "y": 109,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp5.catalyst0",
       "kind": "catalyst",
       "x": 120,
       "y": 50,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp4.catalyst1",
       "kind": "catalyst",
       "x": 56,
       "y": 109,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp5.catalyst1",
       "kind": "catalyst",
       "x": 103,
       "y": 50,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp6.mineral0",
       "kind": "mineral",
       "x": 64,
       "y": 35,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp7.mineral0",
       "kind": "mineral",
       "x": 95,
       "y": 124,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp6.mineral1",
       "kind": "mineral",
       "x": 67,
       "y": 38,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp7.mineral1",
       "kind": "mineral",
       "x": 92,
       "y": 121,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp6.mineral2",
       "kind": "mineral",
       "x": 70,
       "y": 39,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp7.mineral2",
       "kind": "mineral",
       "x": 89,
       "y": 120,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp6.mineral3",
       "kind": "mineral",
       "x": 73,
       "y": 39,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp7.mineral3",
       "kind": "mineral",
       "x": 86,
       "y": 120,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp6.mineral4",
       "kind": "mineral",
       "x": 76,
       "y": 38,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp7.mineral4",
       "kind": "mineral",
       "x": 83,
       "y": 121,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp6.mineral5",
       "kind": "mineral",
       "x": 79,
       "y": 35,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp7.mineral5",
       "kind": "mineral",
       "x": 80,
       "y": 124,
-      "amount": 1800
+      "amount": 3600
     },
     {
       "id": "camp6.catalyst0",
       "kind": "catalyst",
       "x": 63,
       "y": 29,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp7.catalyst0",
       "kind": "catalyst",
       "x": 96,
       "y": 130,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp6.catalyst1",
       "kind": "catalyst",
       "x": 80,
       "y": 29,
-      "amount": 2400
+      "amount": 4800
     },
     {
       "id": "camp7.catalyst1",
       "kind": "catalyst",
       "x": 79,
       "y": 130,
-      "amount": 2400
+      "amount": 4800
     }
   ],
   "decoration": [

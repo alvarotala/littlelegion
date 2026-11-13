@@ -39,6 +39,11 @@ namespace Frontier.Editor
                     var lab=new EntityState{id=1000,owner=0,definition=type.id,position=new Point(20,20),health=type.health};
                     var other=new EntityState{id=1001,owner=0,definition=type.id,position=new Point(25,20),health=type.health};
                     session.Match.Entities.Add(lab.id,lab);session.Match.Entities.Add(other.id,other);
+                    foreach(string role in new[]{"tech","academy"})
+                    {
+                        var prerequisite=session.Catalog.Role(faction,role);int id=role=="tech"?1002:1003;
+                        session.Match.Entities.Add(id,new EntityState{id=id,owner=0,definition=prerequisite.id,position=new Point(20+(id-1002)*5,30),health=prerequisite.health});
+                    }
                     Call(session,"RefreshView");session.Select(lab.id,false);Refresh();
                     var size=Field<RectTransform>(panel,"root").sizeDelta;
                     var attackPosition=Button("Firepower I").anchoredPosition;var armorPosition=Button("Armor I").anchoredPosition;

@@ -6,9 +6,9 @@ static class DifficultyChecks
     private static readonly string[] Roles={"ranged","melee","scout","siege","caster"};
     private static readonly string[] Factions={"industrial","biological"};
     private static readonly (AiDifficulty level,int reaction,int opening,int firstSize,int maxSize,int workers,int army)[] Modes={
-        (AiDifficulty.Easy,3,300,6,22,16,28),
-        (AiDifficulty.Normal,2,210,9,32,20,36),
-        (AiDifficulty.Hard,1,150,10,38,22,38)};
+        (AiDifficulty.Easy,3,300,6,32,24,50),
+        (AiDifficulty.Normal,2,210,9,54,30,70),
+        (AiDifficulty.Hard,1,150,10,64,36,64)};
     private static int Tick(int seconds)=>seconds*Simulation.TickRate;
 
     public static void Run(Catalog catalog,MapDefinition map,MapDefinition training,Action<bool,string> check)
@@ -47,7 +47,11 @@ static class DifficultyChecks
             }
             foreach(var role in new[]{"barracks","barracks","barracks","supply","extractor","tech","academy","defense","research"})Add(role,new Point(20,8));
             for(int i=6;i<mode.workers;i++)Add("worker",new Point(16,16));
-            for(int i=0;i<mode.army;i++)Add(Roles[i%Roles.Length],new Point(15+i%5,16+i/5));
+            for(int i=0,population=0;population<mode.army;i++)
+            {
+                string role=Roles[i%Roles.Length];if(population+catalog.Role(faction,role).supply>mode.army)role="ranged";
+                Add(role,new Point(15+i%5,16+i/5));population+=catalog.Role(faction,role).supply;
+            }
             PlayerView View(int seconds)
             {
                 var view=sim.View(0);view.tick=Tick(seconds);view.minerals=5000;view.catalyst=5000;view.capacity=Simulation.UnitLimit;
@@ -78,7 +82,7 @@ static class DifficultyChecks
 
             foreach(string role in Roles.Append("worker"))
             {
-                var view=View(120);view.supply-=view.entities.Count(e=>catalog[e.definition].role==role);
+                var view=View(120);view.supply-=view.entities.Where(e=>catalog[e.definition].role==role).Sum(e=>catalog[e.definition].supply);
                 view.entities=view.entities.Where(e=>catalog[e.definition].role!=role).ToArray();
                 var command=Bot().Decide(view).FirstOrDefault(c=>c.kind==CommandKind.Train&&catalog[c.definition].role==role);
                 check(command!=null,"Uses available unit role "+role+": "+label);
@@ -106,7 +110,7 @@ static class DifficultyChecks
             var poor=View(1200);poor.minerals=49;poor.catalyst=0;
             check(!Bot().Decide(poor).Any(c=>c.kind==CommandKind.Train||c.kind==CommandKind.Build||c.kind==CommandKind.Research),"No unaffordable production orders: "+label);
 
-            int academyAt=mode.level==AiDifficulty.Easy?160:mode.level==AiDifficulty.Hard?80:110;
+            int academyAt=mode.level==AiDifficulty.Easy?360:mode.level==AiDifficulty.Hard?270:315;
             academyAt=((academyAt+mode.reaction-1)/mode.reaction)*mode.reaction;
             var academyPlan=View(academyAt-mode.reaction);
             academyPlan.entities=academyPlan.entities.Where(e=>catalog[e.definition].role!="academy").ToArray();
@@ -202,10 +206,10 @@ static class DifficultyChecks
                 if(firstDamage<0&&sim.Entities.Values.Any(e=>e.owner==0&&e.lastDamageTick>=0))firstDamage=tick;
                 if(tick%Simulation.TickRate!=0)continue;
                 var own=sim.Entities.Values.Where(e=>e.owner==1).ToArray();
-                maxPopulation=Math.Max(maxPopulation,sim.Units(1)+sim.Reserved(1));
+                maxPopulation=Math.Max(maxPopulation,sim.Population(1)+sim.Reserved(1));
                 maxWorkers=Math.Max(maxWorkers,own.Count(e=>sim.Type(e).role=="worker")+own.Sum(e=>e.queue.Count(q=>!q.research&&catalog[q.definition].role=="worker")));
                 maxSoldiers=Math.Max(maxSoldiers,own.Count(e=>!sim.Type(e).building&&sim.Type(e).role!="worker")+own.Sum(e=>e.queue.Count(q=>!q.research&&catalog[q.definition].role!="worker")));
-                if(sim.Players.Any(p=>p.minerals<0||p.catalyst<0)||sim.Units(1)+sim.Reserved(1)>sim.Capacity(1))throw new Exception("Practice economy invariant violated");
+                if(sim.Players.Any(p=>p.minerals<0||p.catalyst<0)||sim.Population(1)+sim.Reserved(1)>sim.Capacity(1))throw new Exception("Practice economy invariant violated");
                 if(tick%Tick(120)==0)samples.Add(new{seconds=tick/20,workers=own.Count(e=>sim.Type(e).role=="worker"),army=own.Count(e=>!sim.Type(e).building&&sim.Type(e).role!="worker"),sim.Players[1].minerals,sim.Players[1].catalyst});
             }
             foreach(var effect in sim.View(1).abilityEvents)if(effect.owner==1)castsExecuted.Add(effect.id);

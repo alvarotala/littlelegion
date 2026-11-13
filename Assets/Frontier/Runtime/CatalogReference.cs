@@ -131,21 +131,23 @@ namespace Frontier.Runtime
                 if(produced.Count>0)lines.Add("<b>Trains</b>  "+string.Join(" · ",produced));
                 if(unlocked.Count>0)lines.Add("<b>Unlocks</b>  "+string.Join(" · ",unlocked));
                 if(type.role=="research")foreach(var upgrade in catalog.Definition.upgrades)
-                    lines.Add("<b>"+upgrade.name+"</b>  "+upgrade.minerals+" minerals · "+upgrade.catalyst+" gas · "+Seconds(upgrade.duration));
+                    lines.Add("<b>"+upgrade.name+"</b>  "+upgrade.minerals+" minerals · "+upgrade.catalyst+" gas · "+Seconds(upgrade.duration)
+                        +(string.IsNullOrEmpty(upgrade.requires)?"":" · Requires: "+catalog.Role(type.faction,upgrade.requires).name));
                 if(type.role=="hq")lines.Add("Workers return gathered minerals and gas here.");
                 if(type.role=="extractor")lines.Add("Build over a gas deposit. Best efficiency: "+Harvesting.OptimalWorkers("catalyst")+" workers per deposit.");
-                if(type.role=="supply")lines.Add("Capacity is added when construction finishes. Army limit: "+Simulation.UnitLimit+" units.");
+                if(type.role=="supply")lines.Add("Capacity is added when construction finishes. Population limit: "+Simulation.UnitLimit+". Siege and casters use 2 supply each.");
                 if(type.role=="defense")lines.Add("Attacks automatically when an enemy enters weapon range.");
                 return string.Join("\n",lines);
             }
             switch(type.role)
             {
                 case "worker":return "Assign a resource to gather. "+(catalog.Faction(type.faction).regenerates?"Allies regenerate outside combat.":"Repairing spends minerals.")
-                    +"\n"+(catalog.Faction(type.faction).grows?"Structures grow on their own after a worker starts construction.":"Workers stay at construction sites until the structure is complete.");
+                    +"\n"+(catalog.Faction(type.faction).grows?"Structures grow on their own after a worker starts construction.":"Workers stay at construction sites until the structure is complete.")
+                    +"\nBest efficiency: 2 workers per mineral, 3 per gas. Excess workers have diminishing returns.";
                 case "scout":return "Use its speed and vision to explore safely.\nAvoid trading shots with heavier frontline units.";
                 case "melee":return "Close the distance while your ranged units fire from behind.\nGood at keeping enemies away from artillery and casters.";
                 case "ranged":return "Keep a frontline between this unit and close-range attackers.\nAttack-Move engages nearby threats along the route.";
-                case "siege":return "Shots also damage nearby enemies.\nLong range rewards scouting and protection from faster units.";
+                case "siege":return "50% extra direct damage to buildings; 25% splash damage to nearby enemies.\nLong range rewards scouting and protection from faster units.";
                 default:return "";
             }
         }

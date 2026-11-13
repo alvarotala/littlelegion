@@ -168,10 +168,11 @@ static class CasterChecks
             }
             {
                 var sim=Fixture(catalog,faction);var caster=Add(sim,0,"caster",new Point(20.5f,20.5f));
+                var healer=Add(sim,0,"caster",new Point(20.5f,23.5f));
                 var hiddenCaster=Add(sim,1,"caster",new Point(60.5f,20.5f));Warm(sim);
                 Cast(sim,caster,damage.id,caster.position);sim.Step();
                 string hiddenAbility=sim.Type(hiddenCaster).abilities[0];Cast(sim,hiddenCaster,hiddenAbility,hiddenCaster.position);sim.Step();
-                Cast(sim,caster,heal.id,caster.position);sim.Step();
+                Cast(sim,healer,heal.id,healer.position);sim.Step();
                 check(sim.View(0).abilityEvents.Select(e=>e.id).SequenceEqual(new[]{1,2})&&sim.View(1).abilityEvents.Select(e=>e.id).SequenceEqual(new[]{1}),
                     prefix+"event identifiers expose no gaps from unseen enemy spells");
             }

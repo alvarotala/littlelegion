@@ -16,7 +16,7 @@ static class AiEconomyChecks
                 check(trainingOrders.Length==2&&trainingOrders.Select(c=>c.entities[0]).ToHashSet().SetEquals(new[]{first.id,second.id}),
                     faction+" AI economy: both barracks train despite missing siege and caster producers");
                 check(trainingOrders.All(c=>catalog[c.definition].producer=="barracks"),faction+" AI economy: available infantry composition never requests locked technology");
-                Submit(sim,commands,check,faction+" available production");int before=sim.Units(0);Steps(sim,320);
+                Submit(sim,commands,check,faction+" available production");int before=sim.Units(0);Steps(sim,Math.Max(catalog.Role(faction,"melee").duration,catalog.Role(faction,"ranged").duration)+4);
                 check(sim.Units(0)>=before+2&&first.queue.Count==0&&second.queue.Count==0,faction+" AI economy: parallel infantry actually deploys");
             }
             {
@@ -29,7 +29,7 @@ static class AiEconomyChecks
                 var trainingOrders=commands.Where(c=>c.kind==CommandKind.Train&&producers.Any(p=>p.id==c.entities[0])).ToArray();
                 check(trainingOrders.Length==producers.Count&&trainingOrders.Any(c=>catalog[c.definition].role=="siege")&&trainingOrders.Any(c=>catalog[c.definition].role=="caster"),
                     faction+" AI economy: infantry, siege and caster producers operate in the same decision");
-                Submit(sim,commands,check,faction+" complete production");Steps(sim,560);
+                Submit(sim,commands,check,faction+" complete production");Steps(sim,Math.Max(catalog.Role(faction,"siege").duration,catalog.Role(faction,"caster").duration)+4);
                 check(sim.Entities.Values.Any(e=>e.owner==0&&sim.Type(e).role=="siege")&&sim.Entities.Values.Any(e=>e.owner==0&&sim.Type(e).role=="caster"),
                     faction+" AI economy: advanced parallel reservations become real units");
 
@@ -39,7 +39,7 @@ static class AiEconomyChecks
                 commands=Decide(bot,sim,120);
                 int mineralCost=commands.Where(c=>c.kind==CommandKind.Build||c.kind==CommandKind.Train).Sum(c=>catalog[c.definition].minerals);
                 check(mineralCost<=260,faction+" AI economy: parallel construction and production share a reserved mineral budget");
-                Submit(sim,commands,check,faction+" finite budget");check(sim.Players[0].minerals>=0&&sim.Units(0)+sim.Reserved(0)<=sim.Capacity(0),
+                Submit(sim,commands,check,faction+" finite budget");check(sim.Players[0].minerals>=0&&sim.Population(0)+sim.Reserved(0)<=sim.Capacity(0),
                     faction+" AI economy: actual submission respects resources and supply");
             }
             {
@@ -64,7 +64,7 @@ static class AiEconomyChecks
                 var bot=new Strategist(0,AiDifficulty.Hard,catalog,sim.Map.Definition);var commands=Decide(bot,sim,60);
                 check(commands.Any(c=>c.kind==CommandKind.Build&&catalog[c.definition].role=="extractor"),
                     faction+" AI economy: adjacent producer does not permanently block the legal gas extractor footprint");
-                Submit(sim,commands,check,faction+" adjacent gas extractor");Steps(sim,420);
+                Submit(sim,commands,check,faction+" adjacent gas extractor");Steps(sim,catalog.Role(faction,"extractor").duration+120);
                 check(sim.HasRole(0,"extractor"),faction+" AI economy: adjacent gas extractor completes");
                 commands=Decide(bot,sim,90);Submit(sim,commands,check,faction+" new gas harvesting");Steps(sim,400);
                 check(sim.Players[0].catalyst>0,faction+" AI economy: completed extractor becomes real catalyst income");
@@ -76,7 +76,7 @@ static class AiEconomyChecks
                 Add(sim,0,"scout",new Point(25.5f,12.5f));Add(sim,0,"scout",new Point(27.5f,12.5f));
                 Add(sim,0,"siege",new Point(25.5f,14.5f));Add(sim,0,"siege",new Point(27.5f,14.5f));
                 Headquarters(sim).queue.Add(new ProductionOrder{definition=catalog.Role(faction,"worker").id,remaining=1000,total=1000});
-                Warm(sim);sim.Players[0].minerals=140;sim.Players[0].catalyst=100;
+                Warm(sim);sim.Players[0].minerals=catalog.Role(faction,"caster").minerals-10;sim.Players[0].catalyst=catalog.Role(faction,"caster").catalyst;
                 var bot=new Strategist(0,AiDifficulty.Hard,catalog,sim.Map.Definition);var commands=Decide(bot,sim,0);
                 check(!commands.Any(c=>c.kind==CommandKind.Train),
                     faction+" AI economy: cheap infantry cannot consume the reserved first caster's mineral budget");
