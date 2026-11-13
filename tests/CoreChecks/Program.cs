@@ -22,6 +22,13 @@ if(args.Contains("--tutorial-only"))
     return;
 }
 
+if(args.Contains("--formations-only"))
+{
+    AttackFormationChecks.Run(catalog,Check);
+    Console.WriteLine($"{checks} attack formation checks passed.");
+    return;
+}
+
 if(args.Contains("--research-only"))
 {
     ResearchBuildingChecks.Run(catalog,map,Check);
@@ -289,6 +296,7 @@ CollisionChecks.Run(catalog,Check);
 CombatMotionChecks.Run(catalog,Check);
 CombatBehaviorChecks.Run(catalog,Check);
 CasterChecks.Run(catalog,map,Check);
+AttackFormationChecks.Run(catalog,Check);
 ProductionChecks.Run(catalog,map,Check);
 ResearchBuildingChecks.Run(catalog,map,Check);
 MatchRecordingChecks.Run(catalog,map,Check);

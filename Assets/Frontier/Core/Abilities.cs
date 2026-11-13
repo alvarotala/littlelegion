@@ -44,7 +44,7 @@ namespace Frontier.Core
                 if (!inRange && path == null) continue;
                 var resume = caster.castResume ?? new UnitOrder { kind = caster.order, target = caster.target,
                     position = caster.destination, sourceSequence = caster.activeOrderSequence,
-                    trafficPriority = caster.trafficPriority, trafficMass = caster.trafficMass };
+                    trafficPriority = caster.trafficPriority, trafficMass = caster.trafficMass, attackFormation = caster.attackFormation };
                 int seenTick = caster.castResume != null ? caster.castResumeSeenTick : caster.targetSeenTick;
                 MarkUnitOrder(caster,command.sequence,true); ResetTravel(caster);
                 caster.castResume = resume; caster.castResumeSeenTick = seenTick;
@@ -94,7 +94,7 @@ namespace Frontier.Core
             {
                 if (target.health <= 0 || Center(target).Distance(caster.castPoint) > ability.radius) continue;
                 if (ability.effect == "damage" && target.owner != caster.owner && Visible(caster.owner,Center(target)))
-                { target.health -= ability.amount; target.lastDamageTick = Tick; }
+                { target.health -= ability.amount; target.lastDamageTick = Tick; RecordHostileAction(caster,target); }
                 else if (ability.effect == "heal" && target.owner == caster.owner && !Type(target).building)
                     target.health = Math.Min(Type(target).health,target.health + ability.amount);
             }
@@ -117,7 +117,8 @@ namespace Frontier.Core
             caster.destination = resume?.position ?? caster.position;
             caster.activeOrderSequence = resume?.sourceSequence ?? 0; caster.targetSeenTick = seenTick;
             caster.trafficPriority = resume?.trafficPriority ?? 0; caster.trafficMass = resume?.trafficMass ?? 0;
-            caster.moveGoal = caster.order == CommandKind.Move;
+            caster.attackFormation = resume?.attackFormation;
+            caster.moveGoal = caster.order == CommandKind.Move || (caster.order == CommandKind.AttackMove && caster.attackFormation != null);
             // Resume by intent, recomputing paths from the casting position. Do not
             // restore stale routes or spend/execute any queued command a second time.
             // Appending from Hold normally activates the next action immediately.

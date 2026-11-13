@@ -39,6 +39,13 @@ namespace Frontier.Core
             if(first.yieldUntil>Tick&&first.yieldPriority==b)return false;
             if(second.yieldUntil>Tick&&second.yieldPriority==a)return true;
             if(first.settled!=second.settled)return !first.settled;
+            if (first.attackFormation != null && first.attackFormation == second.attackFormation && !first.attackFormation.inContact
+                && FormationMemberMoving(first, first.attackFormation) && FormationMemberMoving(second, first.attackFormation))
+            {
+                var formation = first.attackFormation;
+                float rank = Projection(formation.offsets[first.id], formation.forward) - Projection(formation.offsets[second.id], formation.forward);
+                if (Math.Abs(rank) > .5f) return rank > 0;
+            }
             // A group yields as one flow, even when its members' entity IDs are interleaved.
             if(a!=b)return Math.Abs(TrafficMass(first)-TrafficMass(second))>.001f
                 ?TrafficMass(first)>TrafficMass(second):a<b;
@@ -75,11 +82,13 @@ namespace Frontier.Core
             }
             return cost;
         }
+        private bool YieldingTo(EntityState unit, EntityState other) => TrafficPriority(other) == unit.yieldPriority
+            && (unit.attackFormation == null || unit.attackFormation != other.attackFormation || other.id == unit.yieldFor);
         private bool Travel(EntityState unit,Point destination,float range,bool stopOnFailure=true)
         {
             bool yielding=Tick<unit.yieldUntil;
             if(yielding&&!mobiles.Any(other=>other.id!=unit.id&&other.owner==unit.owner&&other.health>0
-                &&TrafficPriority(other)==unit.yieldPriority&&other.yieldUntil<=Tick
+                &&YieldingTo(unit,other)&&other.yieldUntil<=Tick
                 &&HasTravelOrder(other)))
             {unit.yieldUntil=0;unit.path=null;Brake(unit);return false;}
             if(yielding)
@@ -97,7 +106,7 @@ namespace Frontier.Core
                 unit.path=null;unit.blockedTicks=0;
                 if(yielding)
                 {
-                    bool passing=mobiles.Any(other=>other.id!=unit.id&&other.owner==unit.owner&&TrafficPriority(other)==unit.yieldPriority&&other.health>0&&other.yieldUntil<=Tick
+                    bool passing=mobiles.Any(other=>other.id!=unit.id&&other.owner==unit.owner&&YieldingTo(unit,other)&&other.health>0&&other.yieldUntil<=Tick
                         &&HasTravelOrder(other)
                         &&(TrafficDestination(other).x-unit.yieldOrigin.x)*unit.yieldDirection.x+(TrafficDestination(other).y-unit.yieldOrigin.y)*unit.yieldDirection.y>0
                         &&(other.position.x-unit.position.x)*unit.yieldDirection.x+(other.position.y-unit.position.y)*unit.yieldDirection.y<3);
@@ -140,6 +149,9 @@ namespace Frontier.Core
             float speed=Math.Min(type.speed,(float)Math.Sqrt(2*type.deceleration*Math.Max(0,remainingDistance-range)));
             float waypointDistance=Math.Max(.0001f,unit.position.Distance(waypoint));
             var desired=new Point((waypoint.x-unit.position.x)*speed/waypointDistance,(waypoint.y-unit.position.y)*speed/waypointDistance);
+            if (!yielding) desired = FormationVelocity(unit, desired);
+            // Waiting for the front rank is intentional, not a blocked path.
+            if (desired.Distance(default) < .001f) { Brake(unit); return false; }
             var preferred=AcceleratedStep(unit,desired,step);
             if(!Map.CanTraverse(unit.position,preferred,Type(unit).collisionRadius))
             {
@@ -257,7 +269,7 @@ namespace Frontier.Core
                 other.path=null;
                 // Let passing traffic clear before reclaiming a completed move destination.
                 if(other.moveGoal&&(other.order==CommandKind.Stop||other.resumeMoveTick>Tick))
-                {other.order=CommandKind.Move;other.resumeMoveTick=Tick+20;}
+                {other.order=other.attackFormation != null ? CommandKind.AttackMove : CommandKind.Move;other.resumeMoveTick=Tick+20;}
             }
             // Update only affected cells; a whole-map clear per unit is costly on Quest.
             for(int i=0;i<displaced.Count;i++)
@@ -327,7 +339,8 @@ namespace Frontier.Core
             blocker.yieldPriority=propagating?priority.yieldPriority:TrafficPriority(priority);
             blocker.yieldOrigin=propagating?priority.yieldOrigin:blocker.position;
             blocker.yieldDirection=propagating?priority.yieldDirection:direction;
-            if(blocker.moveGoal&&blocker.order==CommandKind.Stop)blocker.order=CommandKind.Move;
+            if(blocker.moveGoal&&blocker.order==CommandKind.Stop)
+                blocker.order=blocker.attackFormation != null ? CommandKind.AttackMove : CommandKind.Move;
             SetPath(blocker,route,goal,.08f);
         }
         private bool YieldSpotClearsRoute(EntityState traveler,Point goal,float clearance)

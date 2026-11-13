@@ -19,4 +19,5 @@
   <ItemGroup><Compile Include="MatchReportChecks.cs"/></ItemGroup>
   <ItemGroup><Compile Include="MatchRecordingChecks.cs"/></ItemGroup>
   <ItemGroup><Compile Include="GuidedTutorialChecks.cs"/></ItemGroup>
+  <ItemGroup><Compile Include="AttackFormationChecks.cs"/></ItemGroup>
 </Project>

@@ -133,12 +133,17 @@ namespace Frontier.Core
                 return result;
             }
             else if (command.kind != CommandKind.Stop && command.kind != CommandKind.Hold) return Reject("Unknown command.");
+            var attackFormation = command.kind == CommandKind.Attack
+                ? PlanAttackFormation(selected, Center(Entities[command.target]), false, 0) : null;
             foreach (var entity in selected)
             {
                 MarkUnitOrder(entity, command.sequence, preserveQueue);
                 ResetTravel(entity);entity.order = command.kind; entity.target = command.target;
                 if (command.kind == CommandKind.Attack)
-                { entity.destination = Center(Entities[command.target]); entity.targetSeenTick = Tick; }
+                {
+                    entity.destination = Center(Entities[command.target]); entity.targetSeenTick = Tick;
+                    if (attackFormation != null && attackFormation.offsets.ContainsKey(entity.id)) ActivateAttackFormation(entity, attackFormation);
+                }
                 entity.braking=command.kind==CommandKind.Stop&&entity.velocity.Distance(default)>.01f;
                 if (command.kind == CommandKind.Repair && !Entities[command.target].complete) entity.order = CommandKind.Build;
             }
@@ -285,7 +290,11 @@ namespace Frontier.Core
                     Travel(e,e.position,0);continue;
                 }
                 if(e.braking){Brake(e);continue;}
-                if(e.order==CommandKind.Move&&Tick<e.resumeMoveTick)continue;
+                if(e.moveGoal&&Tick<e.resumeMoveTick)
+                {
+                    if(e.order==CommandKind.AttackMove)Fight(e,false);
+                    continue;
+                }
                 switch (e.order)
                 {
                     case CommandKind.Build: Construct(e); break;
@@ -293,7 +302,9 @@ namespace Frontier.Core
                     case CommandKind.Repair: Repair(e); break;
                     case CommandKind.Move: if (Travel(e, e.destination, .1f)) {e.order = CommandKind.Stop;e.settled=true;} break;
                     case CommandKind.Attack: Attack(e); break;
-                    case CommandKind.AttackMove: if (!Fight(e, true) && Travel(e, e.destination, .1f)) e.order = CommandKind.Stop; break;
+                    case CommandKind.AttackMove:
+                        if (!Fight(e, true) && Travel(e, e.destination, .1f)) { e.order = CommandKind.Stop; e.settled = e.moveGoal; }
+                        break;
                     default: if (type.role != "worker") Fight(e, e.order != CommandKind.Hold); break;
                 }
                 if (e.order == CommandKind.Stop) AdvanceUnitOrders(e);

@@ -18,12 +18,21 @@ namespace Frontier.Core
         private int ThreatPriority(EntityState enemy)
         {
             var type = Type(enemy);
-            // Workers carrying out economic orders are not equivalent to soldiers.
-            // Armed workers become threats once they fire, without inspecting orders
-            // that the opposing player cannot observe.
-            if (enemy.complete && type.damage > 0 && (type.role != "worker"
-                || Tick - enemy.lastShotTick <= TickRate * 2)) return 0;
-            return type.building ? 2 : 1;
+            // Categories take precedence over range: even armed buildings and
+            // workers remain behind the enemy army. Within the army, answer fire
+            // observed against our side first, including slow weapons' cooldowns.
+            if (type.building) return 3;
+            if (type.role == "worker") return 2;
+            return enemy.lastObservedHostileTick >= 0
+                && Tick - enemy.lastObservedHostileTick <= Math.Max(TickRate * 2, type.attackPeriod + TickRate / 2) ? 0 : 1;
+        }
+
+        private void RecordHostileAction(EntityState source, EntityState target)
+        {
+            // There are two players. This timestamp belongs to the opposing
+            // player's observations, never to the attacker's private intent.
+            if (source.owner != target.owner && Visible(target.owner, Center(source)) && Visible(target.owner, Center(target)))
+                source.lastObservedHostileTick = Tick;
         }
 
         private void Attack(EntityState unit)
@@ -57,7 +66,9 @@ namespace Frontier.Core
                 if (plan != null && plan.Count > 0)
                 {
                     var item = plan[0];
+                    var formation = unit.attackFormation;
                     ActivateMovement(unit,item.order,true,item.path);
+                    ActivateAttackFormation(unit,formation);
                 }
             }
             Fight(unit,true);
@@ -85,9 +96,8 @@ namespace Frontier.Core
                         + (Type(enemy).building ? Type(enemy).footprint * .4f : 0)
                     && (pursue || CanFire(unit,enemy)))
                 .Select(enemy => new { enemy, fire = CanFire(unit,enemy), distance = Center(unit).Distance(Center(enemy)) })
-                // Do not walk past an available shot to chase a distant threat.
-                .OrderBy(candidate => candidate.fire ? 0 : 1)
-                .ThenBy(candidate => ThreatPriority(candidate.enemy))
+                .OrderBy(candidate => ThreatPriority(candidate.enemy))
+                .ThenBy(candidate => candidate.fire ? 0 : 1)
                 .ThenBy(candidate => candidate.fire ? (candidate.enemy.id == unit.combatTarget ? -1f : 0f)
                     : Math.Max(0,candidate.distance-WeaponRange(unit,candidate.enemy))
                         + (pressure != null && pressure.TryGetValue(candidate.enemy.id,out int count) ? count*.9f : 0)
@@ -175,6 +185,9 @@ namespace Frontier.Core
             var type = Type(unit); if (type.damage <= 0) return false;
             if (!CanFire(unit,target)) return pursue && !type.building && ApproachEnemy(unit,target);
             EndCombatYield(unit);
+            // A firing unit has finished its approach. Its stale route must not
+            // keep allies yielding to a marching group that has already stopped.
+            unit.path = null;
             // Preserve momentum and cooldown while acquiring or changing targets.
             if (!type.building && unit.order != CommandKind.Hold && unit.velocity.Distance(default) > .001f)
             {

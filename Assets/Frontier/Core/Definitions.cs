@@ -223,6 +223,7 @@ namespace Frontier.Core
         public string definition;
         [NonSerialized] internal long trafficPriority;
         [NonSerialized] internal float trafficMass;
+        [NonSerialized] internal AttackFormation attackFormation;
     }
     [Serializable]
     public sealed class EntityState
@@ -247,6 +248,8 @@ namespace Frontier.Core
         public List<UnitOrder> pendingOrders = new List<UnitOrder>();
         // Combat intent is separate from the issued order and its waypoint/queue.
         [NonSerialized] internal int combatTarget, lastShotTick = -1000, targetSeenTick;
+        [NonSerialized] internal int lastObservedHostileTick = -1000;
+        [NonSerialized] internal AttackFormation attackFormation;
         [NonSerialized] internal int approachTarget, approachVersion = -1;
         [NonSerialized] internal Point approachPosition, approachGoal;
         [NonSerialized] internal Dictionary<int,int> unreachableTargets = new Dictionary<int,int>();

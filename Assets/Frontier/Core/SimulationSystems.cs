@@ -23,6 +23,7 @@ namespace Frontier.Core
         }
         private void RecordAttack(EntityState source, EntityState target)
         {
+            RecordHostileAction(source, target);
             Point origin=Center(source),destination=Center(target);int observers=0;
             for(int player=0;player<2;player++)
                 if(Visible(player,origin)&&Visible(player,destination))observers|=1<<player;

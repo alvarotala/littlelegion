@@ -4,6 +4,7 @@ static class CombatBehaviorChecks
 {
     public static void Run(Catalog catalog, Action<bool,string> check)
     {
+        PriorityChecks(catalog, check);
         foreach (string faction in new[] { "industrial", "biological" })
         {
             foreach (int owner in new[] { 0, 1 })
@@ -53,8 +54,8 @@ static class CombatBehaviorChecks
                 var worker = Unit(sim,1,"worker",new Point(22.5f,20.5f));
                 var distant = Unit(sim,1,"ranged",new Point(28.5f,20.5f));
                 Warm(sim); Order(sim,soldier,CommandKind.AttackMove,new Point(40.5f,20.5f)); sim.Step();
-                check(worker.health < sim.Type(worker).health && distant.health == sim.Type(distant).health,
-                    faction + ": automatic combat takes an available shot before chasing a distant threat");
+                check(worker.health == sim.Type(worker).health && soldier.combatTarget == distant.id,
+                    faction + ": an enemy soldier takes priority over a worker already in weapon range");
             }
 
             foreach (int owner in new[] { 0, 1 })
@@ -105,7 +106,7 @@ static class CombatBehaviorChecks
                     }
                 }
                 string label=faction+" "+size+" vs "+size+", attacker "+owner;
-                check(fired.All(f=>f.Count>=size*.8f),label+": both live mixed armies participate from a single attack order, including defenders that shoot back");
+                check(fired.All(f=>f.Count>=size*.8f),label+": both live mixed armies participate from a single attack order, including defenders that shoot back ("+string.Join("/",fired.Select(f=>f.Count))+")");
                 check(!overlap && armies[owner].All(s=>s.order==CommandKind.AttackMove||s.order==CommandKind.Stop),
                     label+": sustained combat preserves body separation and the player's order");
             }
@@ -214,8 +215,8 @@ static class CombatBehaviorChecks
                 var worker = Unit(sim,1,"worker",new Point(23.5f,20.5f));
                 var tower = Unit(sim,1,"defense",new Point(24,24));
                 Warm(sim); Order(sim,soldier,CommandKind.Hold); sim.Step();
-                check(tower.health < sim.Type(tower).health && worker.health == sim.Type(worker).health,
-                    faction + ": a completed armed tower is a threat, not an economic building");
+                check(worker.health < sim.Type(worker).health && tower.health == sim.Type(tower).health,
+                    faction + ": workers take priority over buildings, including completed armed towers");
                 tower.complete = false; tower.remaining = sim.Type(tower).duration;
                 soldier.attackReadyTick = 0; float health = tower.health; sim.Step();
                 check(worker.health < sim.Type(worker).health && tower.health == health,
@@ -408,6 +409,137 @@ static class CombatBehaviorChecks
                 bool cleared = defenders.All(unit=>!sim.Entities.ContainsKey(unit.id));
                 check(!overlap && army.All(unit=>unit.order==CommandKind.AttackMove || (cleared && unit.order==CommandKind.Stop)),
                     faction + ": sustained group combat preserves collision separation and orders");
+            }
+        }
+    }
+
+    private static void PriorityChecks(Catalog catalog, Action<bool,string> check)
+    {
+        foreach (string faction in new[] { "industrial", "biological" }) foreach (int owner in new[] { 0, 1 })
+        {
+            string label = faction + " player " + owner;
+            foreach (var order in new[] { CommandKind.Stop, CommandKind.Hold, CommandKind.AttackMove })
+            {
+                var sim = Fixture(catalog,faction);
+                var soldier = Unit(sim,owner,"ranged",new Point(20.5f,20.5f));
+                var worker = Unit(sim,1-owner,"worker",new Point(23.5f,20.5f));
+                var tower = Unit(sim,1-owner,"defense",new Point(24,18));
+                var enemy = Unit(sim,1-owner,"ranged",new Point(20.5f,25.5f));
+                Warm(sim); Order(sim,soldier,order,new Point(45.5f,20.5f)); sim.Step();
+                check(enemy.health < sim.Type(enemy).health && worker.health == sim.Type(worker).health && tower.health == sim.Type(tower).health,
+                    label + " " + order + ": army first, before closer workers and armed buildings");
+                enemy.health = 0; soldier.attackReadyTick = 0; sim.Step();
+                check(worker.health < sim.Type(worker).health && tower.health == sim.Type(tower).health,
+                    label + " " + order + ": workers next when no army target remains");
+                worker.health = 0; soldier.attackReadyTick = 0; sim.Step();
+                check(tower.health < sim.Type(tower).health,
+                    label + " " + order + ": buildings last after the units are gone");
+            }
+
+            {
+                var sim = Fixture(catalog,faction);
+                var soldier = Unit(sim,owner,"ranged",new Point(20.5f,20.5f));
+                var idle = Unit(sim,1-owner,"ranged",new Point(24.5f,20.5f));
+                var aggressor = Unit(sim,1-owner,"ranged",new Point(20.5f,25.5f));
+                var ally = Unit(sim,owner,"worker",new Point(20.5f,28.5f));
+                Warm(sim); Order(sim,soldier,CommandKind.Hold); sim.Step();
+                check(soldier.combatTarget == idle.id,label + ": chooses the nearer of equal idle soldiers");
+                Order(sim,aggressor,CommandKind.Attack,target:ally.id); sim.Step();
+                check(ally.health < sim.Type(ally).health && aggressor.lastObservedHostileTick >= 0,
+                    label + ": records observed fire against an allied unit");
+                aggressor.attackReadyTick = int.MaxValue;
+                float idleHealth = idle.health;
+                soldier.attackReadyTick = 0; sim.Step();
+                check(soldier.combatTarget == aggressor.id && aggressor.health < sim.Type(aggressor).health && idle.health == idleHealth
+                    && soldier.health == sim.Type(soldier).health,
+                    label + ": leaves an idle firing target to defend an ally from a more distant attacker");
+                soldier.attackReadyTick = int.MaxValue;
+                Steps(sim,Simulation.TickRate*3);
+                // Reacquire from scratch after recent hostility has expired.
+                Order(sim,soldier,CommandKind.Hold); sim.Step();
+                check(soldier.combatTarget == idle.id,label + ": expired aggression does not permanently outrank a nearer soldier");
+            }
+
+            {
+                var sim = Fixture(catalog,faction);
+                var soldier = Unit(sim,owner,"ranged",new Point(20.5f,20.5f));
+                var idle = Unit(sim,1-owner,"ranged",new Point(24.5f,20.5f));
+                var gun = Unit(sim,1-owner,"siege",new Point(28.5f,20.5f));
+                var ally = Unit(sim,owner,"supply",new Point(29,23));
+                Warm(sim); Order(sim,gun,CommandKind.Attack,target:ally.id); sim.Step();
+                gun.attackReadyTick = int.MaxValue;
+                Order(sim,soldier,CommandKind.AttackMove,new Point(40.5f,20.5f)); sim.Step();
+                check(ally.health < sim.Type(ally).health && soldier.combatTarget == gun.id && idle.health == sim.Type(idle).health,
+                    label + ": advances to answer artillery attacking an allied building before firing at an idle soldier");
+                soldier.attackReadyTick = int.MaxValue;
+                Steps(sim,Math.Max(1,sim.Type(gun).attackPeriod-2));
+                Order(sim,soldier,CommandKind.AttackMove,new Point(40.5f,20.5f)); sim.Step();
+                check(soldier.combatTarget == gun.id,label + ": slow artillery remains a priority throughout its normal reload");
+            }
+
+            {
+                var sim = Fixture(catalog,faction);
+                var soldier = Unit(sim,owner,"ranged",new Point(20.5f,20.5f));
+                var enemy = Unit(sim,1-owner,"ranged",new Point(24.5f,20.5f));
+                var worker = Unit(sim,1-owner,"worker",new Point(20.5f,21.8f));
+                Warm(sim); Order(sim,worker,CommandKind.Attack,target:soldier.id); sim.Step();
+                Order(sim,soldier,CommandKind.Hold); sim.Step();
+                check(soldier.health < sim.Type(soldier).health && soldier.combatTarget == enemy.id && worker.health == sim.Type(worker).health,
+                    label + ": a worker fighting back still ranks behind the enemy army");
+            }
+
+            {
+                var sim = Fixture(catalog,faction);
+                var soldier = Unit(sim,owner,"ranged",new Point(20.5f,20.5f));
+                var idle = Unit(sim,1-owner,"ranged",new Point(24.5f,20.5f));
+                var hidden = Unit(sim,1-owner,"siege",new Point(56.95f,20.95f));
+                var ally = Unit(sim,owner,"worker",new Point(66.9f,20.95f));
+                Warm(sim); Order(sim,hidden,CommandKind.Attack,target:ally.id); sim.Step();
+                check(ally.health < sim.Type(ally).health && !sim.Visible(owner,hidden.position) && hidden.lastObservedHostileTick < 0,
+                    label + ": a shot from outside our vision does not create a known attacker");
+                hidden.position = new Point(20.5f,25.5f); hidden.attackReadyTick = int.MaxValue;
+                Steps(sim,4); Order(sim,soldier,CommandKind.Hold); sim.Step();
+                check(soldier.combatTarget == idle.id,label + ": revealing a soldier does not expose its unseen attack history");
+            }
+
+            {
+                var sim = Fixture(catalog,faction);
+                var soldier = Unit(sim,owner,"ranged",new Point(20.5f,20.5f));
+                var idle = Unit(sim,1-owner,"ranged",new Point(24.5f,20.5f));
+                var caster = Unit(sim,1-owner,"caster",new Point(20.5f,25.5f));
+                var ally = Unit(sim,owner,"worker",new Point(20.5f,28.5f));
+                caster.energy = sim.Type(caster).energyMax;
+                Warm(sim);
+                var ability = sim.Catalog.Definition.abilities.First(a=>a.faction==faction && a.effect=="damage");
+                var cast = sim.Submit(new GameCommand{player=1-owner,kind=CommandKind.Cast,entities=new[]{caster.id},definition=ability.id,position=ally.position});
+                sim.Step(); Order(sim,soldier,CommandKind.Hold); sim.Step();
+                check(cast.accepted && ally.health < sim.Type(ally).health && soldier.combatTarget==caster.id
+                    && idle.health==sim.Type(idle).health,
+                    label + ": a caster observed damaging an ally receives the same priority as an enemy firing a weapon");
+            }
+
+            {
+                var sim = Fixture(catalog,faction);
+                for(int y=18;y<=24;y++)for(int x=25;x<=31;x++)
+                {int cell=sim.Map.Index(x,y);sim.Map.Elevation[cell]=1;sim.Map.SurfaceLevel[cell]=1;}
+                var soldier = Unit(sim,owner,"melee",new Point(23.5f,20.5f));
+                var unreachable = Unit(sim,1-owner,"ranged",new Point(28.5f,20.5f));
+                var worker = Unit(sim,1-owner,"worker",new Point(23.5f,21.8f));
+                Unit(sim,owner,"worker",new Point(29.5f,23.5f));
+                Warm(sim); Order(sim,soldier,CommandKind.AttackMove,new Point(42.5f,30.5f)); sim.Step();
+                check(sim.Visible(owner,unreachable.position) && soldier.combatTarget==worker.id && worker.health < sim.Type(worker).health,
+                    label + ": an unreachable higher-priority soldier does not prevent attacking an accessible worker");
+            }
+
+            {
+                var sim = Fixture(catalog,faction);
+                var soldier = Unit(sim,owner,"ranged",new Point(20.5f,20.5f));
+                var building = Unit(sim,1-owner,"supply",new Point(23,20));
+                var aggressor = Unit(sim,1-owner,"ranged",new Point(20.5f,25.5f));
+                Warm(sim); Order(sim,aggressor,CommandKind.Attack,target:soldier.id); sim.Step();
+                Order(sim,soldier,CommandKind.Attack,target:building.id); sim.Step();
+                check(building.health < sim.Type(building).health && soldier.target == building.id && aggressor.health == sim.Type(aggressor).health,
+                    label + ": explicit focus still overrides an observed attacker");
             }
         }
     }

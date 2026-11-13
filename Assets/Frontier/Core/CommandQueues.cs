@@ -21,6 +21,7 @@ namespace Frontier.Core
             unit.castingAbility = null; unit.castResume = null;
             if (!preserveQueue) unit.pendingOrders.Clear();
             unit.activeOrderSequence = sequence;
+            unit.attackFormation = null;
             unit.combatTarget = 0; unit.approachTarget = 0; unit.unreachableTargets.Clear();
         }
 
@@ -43,6 +44,8 @@ namespace Frontier.Core
             long priority = ((long)selected.Min(e => e.id) << 32) | ++nextMovementOrder;
             float mass = selected.Max(e => Type(e).collisionMass);
             int formationRadius = Math.Max(12, (int)Math.Ceiling(Math.Sqrt(selected.Count)) * 2);
+            var formation = command.kind == CommandKind.AttackMove
+                ? PlanAttackFormation(selected, command.position, queued, command.replacePendingSequence) : null;
             var reserved = new HashSet<int>();
             var selectedIds = new HashSet<int>(selected.Select(e => e.id));
             foreach (var other in Entities.Values)
@@ -57,12 +60,16 @@ namespace Frontier.Core
             foreach (var unit in selected.OrderBy(e => (queued ? PlanningOrigin(e, command.replacePendingSequence) : e.position).Distance(command.position)).ThenBy(e => e.id))
             {
                 Point origin = queued ? PlanningOrigin(unit, command.replacePendingSequence) : unit.position;
-                foreach (var destination in DestinationSlots(command.position, formationRadius, reserved, Type(unit).collisionRadius))
+                bool inFormation = formation != null && formation.offsets.TryGetValue(unit.id, out _);
+                Point offset = inFormation ? formation.offsets[unit.id] : default;
+                var desired = new Point(command.position.x + offset.x, command.position.y + offset.y);
+                foreach (var destination in DestinationSlots(desired, formationRadius, reserved, Type(unit).collisionRadius))
                 {
                     var path = paths.Find(origin, destination, .1f, null, Type(unit).collisionRadius);
                     if (path == null) continue;
                     plan.Add((unit, new UnitOrder { sourceSequence = command.sequence, kind = command.kind,
-                        position = destination, trafficPriority = priority, trafficMass = mass }, path));
+                        position = destination, trafficPriority = priority, trafficMass = mass,
+                        attackFormation = inFormation ? formation : null }, path));
                     // The same formation spacing applies to immediate and queued group commands.
                     int gap = selected.Count > 1 ? 1 : 0;
                     for (int y = (int)destination.y - gap; y <= (int)destination.y + gap; y++)
@@ -83,8 +90,9 @@ namespace Frontier.Core
             ResetTravel(unit);
             unit.trafficPriority = order.trafficPriority;
             unit.trafficMass = order.trafficMass;
+            unit.attackFormation = order.attackFormation;
             unit.order = order.kind; unit.destination = order.position; unit.target = 0;
-            unit.moveGoal = order.kind == CommandKind.Move;
+            unit.moveGoal = order.kind == CommandKind.Move || (order.kind == CommandKind.AttackMove && order.attackFormation != null);
             SetPath(unit, path, order.position, .1f);
             return Accept();
         }
@@ -130,6 +138,12 @@ namespace Frontier.Core
             }
             else plan = selected.Select(e => (e, new UnitOrder { sourceSequence = command.sequence, kind = command.kind,
                 target = command.target, position = command.position, definition = command.definition }, (List<int>)null)).ToList();
+            if (command.kind == CommandKind.Attack)
+            {
+                var formation = PlanAttackFormation(selected, Center(Entities[command.target]), true, command.replacePendingSequence);
+                foreach (var item in plan)
+                    if (formation != null && formation.offsets.ContainsKey(item.unit.id)) item.order.attackFormation = formation;
+            }
             int accepted = 0;
             foreach (var item in plan)
             {
@@ -148,6 +162,7 @@ namespace Frontier.Core
                         entities = new[] { unit.id }, target = item.order.target, position = item.order.position, definition = item.order.definition };
                     var result = item.order.kind == CommandKind.Move || item.order.kind == CommandKind.AttackMove
                         ? ActivateMovement(unit, item.order, false) : ExecuteCommand(replacement, new List<EntityState> { unit }, false);
+                    if (result.accepted && item.order.kind == CommandKind.Attack) ActivateAttackFormation(unit, item.order.attackFormation);
                     if (result.accepted) accepted++;
                     continue;
                 }
@@ -185,7 +200,9 @@ namespace Frontier.Core
                 entities = new[] { unit.id }, target = order.target, position = order.position, definition = order.definition };
             var selected = new List<EntityState> { unit };
             var validation = ValidateQueuedAction(command, selected);
-            return validation.accepted ? ExecuteCommand(command, selected, true) : validation;
+            var result = validation.accepted ? ExecuteCommand(command, selected, true) : validation;
+            if (result.accepted) ActivateAttackFormation(unit, order.attackFormation);
+            return result;
         }
 
         private bool AdvanceUnitOrders(EntityState unit)

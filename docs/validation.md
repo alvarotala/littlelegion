@@ -1430,3 +1430,19 @@ La rueda filtra Research (Firepower/Armor) y conserva entrenamiento; las mejoras
 
 - La tarjeta queda 24 cm más lejos que el objetivo según la profundidad de la cámara, separada por encima del punto señalado. El ajuste al campo visual conserva esa separación y reduce el tamaño si hace falta. Al cambiar de objetivo en el mapa se coloca directamente para no cruzar sobre el área de interacción.
 - `GuidedTutorialPreview.Run` vía Unity CLI: salida 0, **1756 comprobaciones / 58 vistas**, en `TestResults/unity-tutorial-clear-target-verified.log`. Cuatro recorridos completos ES/EN y escritorio/Touch. Cada foco de mapa verifica profundidad, separación en pantalla y que el rayo hacia el objetivo no intersecte la tarjeta; se conservan los controles y la victoria real. Inspeccionada `GuidedTutorial/es-desktop-06-board-worker-player.png`. Validación de Editor; sin prueba física en Quest.
+
+### Formación automática de ataque · 2026-11-13
+
+- Ataques de selecciones militares mixtas: filas por alcance, ancho según composición, orientación hacia el objetivo y coordinación de velocidad durante la marcha. El combate libera las filas para encontrar puestos de tiro; las nuevas órdenes permiten separar unidades. Incluye ataques directos, Attack Move, colas, doble toque y recuperación de la formación después de ceder el paso sin haber entrado en combate.
+- **2543 comprobaciones del núcleo**, salida 0, en `TestResults/core-attack-formations.log`. Incluye **48 nuevas comprobaciones de formación**, también ejecutadas por separado en `TestResults/attack-formations.log`: ambas facciones, cuatro orientaciones, reorganización de filas inicialmente invertidas, ataques directos y encolados, bajas y grupos de 60 unidades en pasos estrechos y esquinas.
+- **2149 comprobaciones de red**, salida 0, en `TestResults/network-attack-formations.log`. Unity **6000.3.26f1**, compilación y `ProjectBuilder.ValidateContent` mediante CLI: salida 0; los tres mapas validados en `TestResults/unity-attack-formations.log`. `git diff --check` sin errores.
+- `ReplayRulesVersion=5`: los informes antiguos siguen disponibles; los replays previos requieren sus reglas anteriores. Clientes y servidor deben usar la misma versión de reglas. No se modificó el formato de comandos ni se desplegó el servidor.
+- Sin build nuevo de jugador ni prueba física en Quest; falta valorar la sensación de control y el rendimiento en el dispositivo.
+
+### Prioridades de objetivos de combate · 2026-11-13
+
+- Selección automática: ejército que haya atacado recientemente a nuestro bando, resto del ejército, trabajadores y edificios, incluidas torres. La categoría precede al alcance; dentro de igual prioridad se conservan alcance, estabilidad del blanco y reparto de aproximaciones. Los objetivos inaccesibles se omiten; Hold conserva su posición y los ataques explícitos mantienen el foco indicado.
+- La agresión se registra solo cuando se observa daño de armas o habilidades contra unidades o estructuras propias. No consulta órdenes enemigas ni revela ataques ocurridos fuera de visión. La preferencia caduca y cubre al menos dos segundos o la recarga normal del arma más medio segundo, lo que sea mayor.
+- **2627 comprobaciones del núcleo**, salida 0, en `TestResults/core-combat-priorities.log`. La suite enfocada pasó **264 comprobaciones de combate**, incluidas **84 nuevas** de prioridad, en `TestResults/combat-priorities.log`: ambas facciones y jugadores, Stop/Hold/Attack Move, cambio de foco ante ataques a aliados, artillería, casters, expiración, niebla, objetivos inaccesibles y foco explícito.
+- **2149 comprobaciones de red**, salida 0, en `TestResults/network-combat-priorities.log`. Compilación y validación de los tres mapas con Unity **6000.3.26f1**, salida 0, en `TestResults/unity-combat-priorities.log`. `git diff --check` sin errores.
+- `ReplayRulesVersion=6`; clientes y servidor deben usar las mismas reglas. Sin despliegue, build de jugador ni prueba física en Quest.

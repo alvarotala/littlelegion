@@ -26,6 +26,14 @@ Ambas facciones parten de estos valores; conservan sus velocidades y estadístic
 
 ## Tráfico y contactos
 
+### Formación automática al atacar
+
+Las selecciones militares mixtas se ordenan por alcance al recibir **Attack** o **Attack Move**: melee delante, exploradores de corto alcance después, tiradores/casters en medio y artillería atrás. El ancho y la cantidad de filas dependen de las unidades seleccionadas; no se reservan filas para roles ausentes. La orientación parte del centro del grupo hacia el objetivo. En Attack Move, el punto indicado es el centro de la formación final, con destinos transitables y separados para cada unidad.
+
+Durante la marcha, las unidades próximas ajustan su avance para conservar las filas y acompañar a las más lentas. Conservan su velocidad máxima al recuperar terreno. Los miembros alejados, bloqueados, muertos o que reciben otra orden dejan de frenar al resto. El terreno puede abrir la formación para cruzar pasos estrechos. Al entrar en combate se libera la coordinación de marcha: cada unidad busca espacio y línea de tiro a su alcance, manteniendo el foco de un ataque explícito.
+
+Funciona también con órdenes en cola y con el doble toque que convierte Move en Attack Move. Move, Stop y Hold permiten sacar unidades de la formación inmediatamente. Los trabajadores y los grupos de un solo rango mantienen su movimiento habitual. Ambas facciones, el jugador y la IA utilizan estas mismas reglas.
+
 Cada lote de órdenes tiene una identidad propia, incluso al reseleccionar parte de un grupo. Los grupos conservan destinos individuales y pueden aprovechar tramos rectos libres del camino sin seguir cada centro de celda. Cada atajo comprueba el radio del cuerpo, terreno y tráfico visible.
 
 En un encuentro, el grupo más pesado tiene prioridad; los grupos de igual peso usan un orden estable. La masa del grupo corresponde a su miembro más pesado al emitir la orden. Una unidad liviana no puede desplazar físicamente a una pesada que mantiene su recorrido. En cadenas de empuje se conserva la masa del empujador original. Las unidades que ya se apartaron aceptan desplazamientos seguros sin intentar recuperar inmediatamente el mismo punto de espera.
@@ -37,5 +45,7 @@ Todo desplazamiento comprueba terreno, cuerpos y presupuesto de velocidad. Un em
 ## Validación
 
 `NavigationChecks`, `PathfindingChecks` y `CollisionChecks` prueban el movimiento completo, no solamente si A* devuelve un camino. Cubren ambas facciones, pasillos de una y dos celdas, grupos cruzados, selecciones solapadas, unidades estacionadas, masas distintas, rampas, edificios, recolección y respuesta a nuevas órdenes. Cada paso comprueba separación, terreno y límites de velocidad; las cesiones deben conservar los destinos. `CombatMotionChecks` cubre frenado al entrar en alcance, continuidad durante el cooldown y revalidación de alcance y línea de visión después de desplazarse.
+
+`AttackFormationChecks` verifica filas orientadas en varias direcciones, reorganización durante la marcha, foco explícito, colas, doble toque, bajas en primera línea y ejércitos mixtos de 60 unidades en esquinas y pasos estrechos. Se puede ejecutar con `bash scripts/check-core.sh --formations-only`.
 
 `Frontier.Editor.UnitFacingPreview.Render` comprueba orientación visual, cambios de rumbo, filtrado de zigzag, pausa, reutilización de modelos y entrega inmediata de órdenes aceptadas. Los resultados concretos se registran en [validación](validation.md). Ninguna de estas comprobaciones sustituye una prueba de comodidad y rendimiento en Quest 3.
