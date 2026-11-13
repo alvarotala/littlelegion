@@ -27,14 +27,14 @@ namespace Frontier.Core
             this.player=player; Difficulty=difficulty; this.catalog=catalog; terrain=new GridMap(map);
             pace=difficulty==AiDifficulty.Easy
                 ? new Pace { reaction=3, workers=24, army=50, recruit=8, build=8, barracks=3, extractor=30, tech=240, academy=360,
-                    defense=150, research=300, expansion=360, firstWave=300, waveSize=6, waveLimit=32, waveRest=65, waveDuration=180,
+                    defense=150, research=300, expansion=360, firstWave=300, waveSize=8, waveLimit=32, waveRest=65, waveDuration=180,
                     scoutStart=90, attackShare=.65f, retreatHealth=.22f }
                 : difficulty==AiDifficulty.Hard
                 ? new Pace { reaction=1, workers=36, army=64, recruit=2, build=2, barracks=5, extractor=12, tech=180, academy=270,
-                    defense=65, research=210, expansion=180, firstWave=150, waveSize=10, waveLimit=64, waveRest=20, waveDuration=300,
-                    scoutStart=35, attackShare=.95f, retreatHealth=.32f }
+                    defense=65, research=210, expansion=180, firstWave=180, waveSize=14, waveLimit=64, waveRest=20, waveDuration=300,
+                    scoutStart=35, attackShare=.85f, retreatHealth=.32f }
                 : new Pace { reaction=2, workers=30, army=70, recruit=4, build=4, barracks=4, extractor=18, tech=210, academy=315,
-                    defense=100, research=240, expansion=240, firstWave=210, waveSize=9, waveLimit=54, waveRest=35, waveDuration=240,
+                    defense=100, research=240, expansion=240, firstWave=240, waveSize=14, waveLimit=54, waveRest=35, waveDuration=240,
                     scoutStart=60, attackShare=.8f, retreatHealth=.28f };
         }
         private static int Seconds(int seconds)=>seconds*Simulation.TickRate;

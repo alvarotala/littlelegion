@@ -7,6 +7,53 @@ static class AiEconomyChecks
         foreach(string faction in new[]{"industrial","biological"})
         {
             {
+                var sim=Fixture(catalog,faction);Add(sim,0,"barracks",new Point(3,12));Add(sim,0,"research",new Point(3,17));
+                Add(sim,0,"supply",new Point(3,4));Add(sim,0,"supply",new Point(13,4));Add(sim,0,"supply",new Point(17,4));
+                for(int i=0;i<20;i++)Add(sim,0,"ranged",new Point(21+i%5,7+i/5));
+                Add(sim,0,"siege",new Point(21,12));
+                for(int i=0;i<12;i++)Add(sim,1,"melee",new Point(16+i%4,14+i/4));
+                Warm(sim);sim.Players[0].minerals=1500;sim.Players[0].catalyst=1000;
+                var orders=Decide(new Strategist(0,AiDifficulty.Hard,catalog,sim.Map.Definition),sim,600);
+                check(!orders.Any(c=>c.kind==CommandKind.Research||c.kind==CommandKind.Build&&new[]{"hq","tech","academy","research","barracks"}.Contains(catalog[c.definition].role)),
+                    faction+" AI economy: a visible base assault defers expansion, extra production and technology spending");
+                check(orders.Any(c=>c.kind==CommandKind.Train&&catalog[c.definition].role!="worker"),
+                    faction+" AI economy: defending the base preserves military production");
+                Submit(sim,orders,check,faction+" production under pressure");
+                var view=sim.View(0);view.tick=600*Simulation.TickRate;
+                view.entities=view.entities.Where(e=>e.owner==0).ToArray();
+                orders=new Strategist(0,AiDifficulty.Hard,catalog,sim.Map.Definition).Decide(view).ToArray();
+                check(orders.Any(c=>c.kind==CommandKind.Build&&catalog[c.definition].role=="tech"),
+                    faction+" AI economy: a healthy army resumes technology investment after the assault");
+                foreach(var unit in view.entities.Where(e=>!catalog[e.definition].building&&catalog[e.definition].role!="worker"))unit.health=catalog[unit.definition].health*.2f;
+                orders=new Strategist(0,AiDifficulty.Hard,catalog,sim.Map.Definition).Decide(view).ToArray();
+                check(!orders.Any(c=>c.kind==CommandKind.Build&&new[]{"tech","academy","research"}.Contains(catalog[c.definition].role)||c.kind==CommandKind.Research),
+                    faction+" AI economy: wounded survivors cannot qualify as a healthy army for costly technology");
+            }
+            {
+                var sim=Fixture(catalog,faction);Add(sim,0,"extractor",new Point(9,19));Warm(sim);
+                var gas=sim.Resources.First(r=>r.kind=="catalyst");
+                var workers=sim.Entities.Values.Where(e=>e.owner==0&&sim.Type(e).role=="worker").ToArray();
+                sim.Submit(new GameCommand{player=0,kind=CommandKind.Gather,target=gas.id,entities=workers.Take(3).Select(w=>w.id).ToArray()});
+                Warm(sim);sim.Players[0].minerals=0;sim.Players[0].catalyst=1000;
+                var bot=new Strategist(0,AiDifficulty.Hard,catalog,sim.Map.Definition);
+                var commands=Decide(bot,sim,60);
+                check(commands.Count(c=>c.kind==CommandKind.Gather&&c.target!=gas.id)>=3,
+                    faction+" AI economy: sufficient gas reserves return gas workers to minerals");
+                Submit(sim,commands,check,faction+" gas reserve reached");
+                check(workers.All(w=>w.order==CommandKind.Gather&&w.target!=gas.id),
+                    faction+" AI economy: no worker remains banking unused gas while minerals are available");
+                sim.Players[0].catalyst=0;
+                commands=Decide(bot,sim,70);
+                check(commands.Any(c=>c.kind==CommandKind.Gather&&c.target==gas.id),
+                    faction+" AI economy: gas harvesting restarts after spending the reserve");
+                Submit(sim,commands,check,faction+" gas reserve spent");
+                foreach(var resource in sim.Resources.Where(r=>r.kind=="mineral"))resource.remaining=0;
+                Warm(sim);sim.Players[0].catalyst=1000;
+                commands=Decide(bot,sim,80);Submit(sim,commands,check,faction+" gas-only fallback");
+                check(workers.All(w=>w.order==CommandKind.Gather&&w.target==gas.id),
+                    faction+" AI economy: exhausted mineral deposits do not leave workers idle beside usable gas");
+            }
+            {
                 var sim=Fixture(catalog,faction);var first=Add(sim,0,"barracks",new Point(3,12));var second=Add(sim,0,"barracks",new Point(13,4));
                 Add(sim,0,"supply",new Point(3,4));Add(sim,0,"supply",new Point(13,9));
                 Add(sim,0,"ranged",new Point(18.5f,12.5f));Add(sim,0,"melee",new Point(20.5f,12.5f));Add(sim,0,"scout",new Point(22.5f,12.5f));

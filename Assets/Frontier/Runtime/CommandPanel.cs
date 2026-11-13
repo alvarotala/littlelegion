@@ -219,7 +219,7 @@ namespace Frontier.Runtime
                     headline.text="NEW MATCH";economy.text="SKIRMISH / LOCAL AI";
                     selection.text=$"{Session.Catalog.Faction(Session.Faction).name}  vs  {Session.Catalog.Faction(Session.EnemyFaction).name} · {DifficultyLabel} · {Session.Map.title}";
                     harvesting.text=Board.Placed?"BOARD READY":"BOARD NOT PLACED";
-                    ((LocalizedText)harvesting).Append(Session.Difficulty=="hard"?" · Sustained attacks from 2:30.":Session.Difficulty=="easy"?" · Attacks from 5 min.":" · Attacks from 3:30.");
+                    ((LocalizedText)harvesting).Append(Session.Difficulty=="hard"?" · Sustained attacks from 3:00.":Session.Difficulty=="easy"?" · Attacks from 5 min.":" · Attacks from 4:00.");
                     status.text=Board.Placed?"Both factions start equally. Position board lets you adjust your play space.":"Choose Position board to place your battlefield, then Start Match when ready.";break;
                 case MenuPage.OnlineSetup:case MenuPage.DirectSetup:case MenuPage.OnlineEndpoint:case MenuPage.PublicEndpoint:case MenuPage.OnlineConnection:
                     UpdateOnlineHeader();break;

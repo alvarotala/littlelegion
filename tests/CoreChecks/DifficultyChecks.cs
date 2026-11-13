@@ -6,9 +6,9 @@ static class DifficultyChecks
     private static readonly string[] Roles={"ranged","melee","scout","siege","caster"};
     private static readonly string[] Factions={"industrial","biological"};
     private static readonly (AiDifficulty level,int reaction,int opening,int firstSize,int maxSize,int workers,int army)[] Modes={
-        (AiDifficulty.Easy,3,300,6,32,24,50),
-        (AiDifficulty.Normal,2,210,9,54,30,70),
-        (AiDifficulty.Hard,1,150,10,64,36,64)};
+        (AiDifficulty.Easy,3,300,8,32,24,50),
+        (AiDifficulty.Normal,2,240,14,54,30,70),
+        (AiDifficulty.Hard,1,180,14,64,36,64)};
     private static int Tick(int seconds)=>seconds*Simulation.TickRate;
 
     public static void Run(Catalog catalog,MapDefinition map,MapDefinition training,Action<bool,string> check)
@@ -65,7 +65,7 @@ static class DifficultyChecks
             check(!bot.Decide(beforeReaction).Any(),"Reaction delay: "+label);
             check(bot.Decide(View(mode.reaction)).Any(),"Reacts on its cadence: "+label);
             var before=bot.Decide(View(mode.opening-mode.reaction)).ToArray();
-            check(!before.Any(c=>c.kind==CommandKind.AttackMove),"Main army respects its shorter opening: "+label);
+            check(!before.Any(c=>c.kind==CommandKind.AttackMove),"Main army respects its preparation time: "+label);
             var orders=bot.Decide(View(mode.opening)).ToArray();
             var wave=orders.Where(c=>c.kind==CommandKind.AttackMove&&c.position.Distance(new Point(14,14))>14).OrderByDescending(c=>c.entities.Length).FirstOrDefault();
             check(wave!=null&&wave.entities.Length>=mode.firstSize&&wave.entities.Length<=mode.maxSize,

@@ -30,11 +30,13 @@ Todas las dificultades usan **el catálogo completo** de su facción: trabajador
 
 | Modalidad | Reacción | Ataque principal desde | Ejército enviado | Pausa de recuperación | Objetivo de trabajadores / población militar |
 | --- | --- | --- | --- | --- | --- |
-| **Easy** | 3 s | 5 min, con al menos 6 soldados | 65 % disponible, hasta 32 | 65 s | 24 / 50 |
-| **Normal** | 2 s | 3 min 30 s, con al menos 9 soldados | 80 % disponible, hasta 54 | 35 s | 30 / 70 |
-| **Hard** | 1 s | 2 min 30 s, con al menos 10 soldados | 95 % disponible, hasta 64 | 20 s | 36 / 64 |
+| **Easy** | 3 s | 5 min, con al menos 8 soldados | 65 % disponible, hasta 32 | 65 s | 24 / 50 |
+| **Normal** | 2 s | 4 min, con al menos 14 soldados | 80 % disponible, hasta 54 | 35 s | 30 / 70 |
+| **Hard** | 1 s | 3 min, con al menos 14 soldados | 85 % disponible, hasta 64 | 20 s | 36 / 64 |
 
-Las dificultades se distinguen por su ritmo de producción, exploración y refuerzos. Easy conserva mayor tiempo de preparación; Normal moviliza una parte mayor de su ejército; Hard desarrolla antes su economía y tecnología, utiliza hasta cinco barracas y mantiene la presión con casi todas las tropas disponibles. Si su economía necesita menos trabajadores, emplea esos espacios en más soldados, respetando siempre el límite de 100 puntos de población. Estos tiempos indican cuándo puede comenzar la ofensiva principal; necesita reunir el mínimo de unidades. Los exploradores pueden adelantarse y la defensa de la base funciona desde el inicio.
+Las dificultades se distinguen por su ritmo de producción, exploración y refuerzos. Easy conserva mayor tiempo de preparación; Normal moviliza una parte mayor de su ejército; Hard desarrolla antes su economía y tecnología, utiliza hasta cinco barracas y moviliza el 85 % del ejército disponible, con un mínimo de 14, y conserva reservas cuando el grupo es mayor. Si su economía necesita menos trabajadores, emplea esos espacios en más soldados, respetando siempre el límite de 100 puntos de población. Estos tiempos indican cuándo puede comenzar la ofensiva principal; necesita reunir el mínimo de unidades. Los exploradores pueden adelantarse y la defensa de la base funciona desde el inicio.
+
+La recolección de gas se ajusta a los próximos gastos de tecnología, asedio, magos y mejoras; al cubrir esa reserva, los trabajadores vuelven a minerales y retoman gas cuando hace falta. Antes de invertir en tecnología, la IA considera la salud del ejército desplegado. Ante un ataque importante visible contra una base, pospone nuevas expansiones, tecnología, mejoras y cuarteles adicionales para sostener la defensa; conserva la expansión de emergencia si sus minerales se están agotando.
 
 La producción aprovecha varios edificios a la vez y sigue entrenando unidades disponibles mientras desbloquea artillería y casters. La economía considera las asignaciones de recolección, las colas de producción y el presupuesto restante de cada decisión. La IA usa únicamente su visión, edificios recordados y datos públicos del mapa; puede defender sus bases, retirarse y reagruparse antes de volver a atacar.
 
@@ -152,15 +154,15 @@ Cada facción tiene una academia que se construye con un trabajador después de 
 
 | Facción | Academia | Construcción | Requisito | Caster | Producción |
 | --- | --- | --- | --- | --- | --- |
-| The Consortium | **Resonance Lab** | 200 M + 100 G · 30 s | Arsenal terminado | **Conduit** | 150 M + 75 G · 22 s |
-| Symbiosis | **Spore Sanctum** | 200 M + 100 G · 30 s | Chrysalis terminada | **Oracle** | 150 M + 75 G · 22 s |
+| The Consortium | **Resonance Lab** | 250 M + 175 G · 50 s | Arsenal terminado | **Conduit** | 200 M + 125 G · 36 s · 2 población |
+| Symbiosis | **Spore Sanctum** | 250 M + 175 G · 50 s | Chrysalis terminada | **Oracle** | 200 M + 125 G · 36 s · 2 población |
 
-Cada caster ocupa un lugar de suministro, aparece con **100 de energía** y recupera **2 por segundo**, hasta ese máximo. La pausa detiene la regeneración y los tiempos de recarga. Su ataque básico es automático; las habilidades del jugador se activan manualmente.
+Cada caster ocupa dos puntos de población, aparece con **100 de energía** y recupera **2 por segundo**, hasta ese máximo. La pausa detiene la regeneración y los tiempos de recarga. Su ataque básico es automático; las habilidades del jugador se activan manualmente.
 
 | Habilidad industrial / biológica | Efecto instantáneo | Energía | Recarga | Alcance / radio |
 | --- | --- | --- | --- | --- |
-| **Ion Burst / Spore Burst** | 45 de daño a cada enemigo visible dentro del área, incluidas estructuras; sin fuego amigo | 50 | 8 s | 8 / 3 celdas |
-| **Repair Field / Mend** | Recupera hasta 40 de vida de cada unidad propia dentro del área, sin superar su máximo; no cura edificios | 40 | 10 s | 8 / 3 celdas |
+| **Ion Burst / Spore Burst** | 55 de daño a cada enemigo visible dentro del área, incluidas estructuras; sin fuego amigo | 60 | 12 s | 8 / 3 celdas |
+| **Repair Field / Mend** | Recupera hasta 70 de vida de cada unidad propia dentro del área, sin superar su máximo; no cura edificios | 50 | 12 s | 8 / 3 celdas |
 
 Seleccionar uno o varios casters, solos o junto al ejército, muestra **CASTER ABILITIES** en el panel y las mismas habilidades en la rueda. La ficha muestra **ENERGY**, el total disponible de los casters seleccionados y cuántas habilidades están listas; cada acción indica su costo y cantidad de casters preparados, o la energía/recarga que falta.
 

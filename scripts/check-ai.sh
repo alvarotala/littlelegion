@@ -3,9 +3,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # Compare current strategy against a preserved local source artifact using the
-# current simulation/catalog on both sides. Example first pass (six matches):
-# bash scripts/check-ai.sh --difficulty=all --limit=6 --output=TestResults/ai-opening.json
-# Full Hard matrix: --difficulty=Hard --limit=16. Timeouts are results, not wins.
+# current simulation/catalog on both sides. Example first pass (nine matches):
+# bash scripts/check-ai.sh --difficulty=all --limit=9 --output=TestResults/ai-opening.json
+# Full Hard matrix: --difficulty=Hard --limit=24. Timeouts are results, not wins.
 baseline="${FRONTIER_AI_BASELINE:-$PWD/TestResults/ai-before/LegacyStrategist.cs}"
 arguments=()
 for argument in "$@"; do
@@ -16,7 +16,7 @@ Usage: bash scripts/check-ai.sh [options]
   --difficulty=all|Hard    Current AI difficulty (Easy, Normal, Hard; default Hard)
   --opponent=legacy|current  Comparison strategy (default legacy)
   --legacy-difficulty=X   Comparison difficulty (default same)
-  --map=all|training|rift --pair=all|mirrors|industrial-biological
+  --map=all|training|rift|desert --pair=all|mirrors|industrial-biological
   --side=both|0|1         Current AI's player slot
   --start=0 --limit=48    Select a reproducible slice of the matchup matrix
   --seconds=1800          Simulated timeout per match
@@ -25,9 +25,9 @@ Usage: bash scripts/check-ai.sh [options]
   --development          Also run peaceful economy cases after competitive matches
   --development-seconds=720  Duration of the peaceful fixture
   --output=PATH          JSON evidence file, updated after each finished match
-First six map/difficulty cases: --difficulty=all --limit=6
-Full Hard faction/side matrix: --difficulty=Hard --limit=16
-Current Hard vs current Normal: --opponent=current --legacy-difficulty=Normal --pair=mirrors --limit=8
+First nine map/difficulty cases: --difficulty=all --limit=9
+Full Hard faction/side matrix: --difficulty=Hard --limit=24
+Current Hard vs current Normal: --opponent=current --legacy-difficulty=Normal --pair=mirrors --limit=12
 JSON legacy-named fields identify the comparator slot; opponentStrategy records its code.
 Timeouts are recorded as timeouts; no material advantage is counted as a win.
 HELP

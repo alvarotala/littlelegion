@@ -4,13 +4,22 @@ static class AiTacticsChecks
 {
     private static readonly string[] Factions={"industrial","biological"};
     private static readonly (AiDifficulty level,int opening,int scout,int reaction,float share,int max)[] Modes={
-        (AiDifficulty.Easy,300,90,3,.65f,32),(AiDifficulty.Normal,210,60,2,.8f,54),(AiDifficulty.Hard,150,35,1,.95f,64)};
+        (AiDifficulty.Easy,300,90,3,.65f,32),(AiDifficulty.Normal,240,60,2,.8f,54),(AiDifficulty.Hard,180,35,1,.85f,64)};
 
     public static void Run(Catalog catalog,Action<bool,string> check)
     {
         foreach(string faction in Factions)foreach(var mode in Modes)
         {
             string label=mode.level+"/"+faction;
+            {
+                var sim=Fixture(catalog,faction);
+                int minimum=mode.level==AiDifficulty.Easy?8:14;
+                Army(sim,minimum-1,new Point(16,16));Warm(sim,mode.reaction);
+                var view=sim.View(0);view.tick=mode.opening*Simulation.TickRate;
+                var bot=new Strategist(0,mode.level,catalog,sim.Map.Definition);
+                check(!bot.Decide(view).Any(c=>c.kind==CommandKind.AttackMove),
+                    "AI does not launch an undersized army just because the opening timer elapsed: "+label);
+            }
             {
                 var sim=Fixture(catalog,faction);Advance(sim,mode.opening*Simulation.TickRate);
                 var army=Army(sim,20,new Point(16,16));var observer=Add(sim,0,"scout",new Point(45,27));army.Add(observer);
@@ -19,7 +28,7 @@ static class AiTacticsChecks
                 var bot=new Strategist(0,mode.level,catalog,sim.Map.Definition);
                 var orders=Execute(sim,bot,check,label+" opening");
                 var attack=orders.FirstOrDefault(c=>c.kind==CommandKind.AttackMove);
-                int expected=Math.Min(mode.max,Math.Max(mode.level==AiDifficulty.Easy?6:mode.level==AiDifficulty.Normal?9:10,(int)Math.Ceiling(army.Count*mode.share)));
+                int expected=Math.Min(mode.max,Math.Max(mode.level==AiDifficulty.Easy?8:14,(int)Math.Ceiling(army.Count*mode.share)));
                 check(attack!=null&&attack.entities.Length==expected,"AI commits a proportional army instead of a tiny fixed wave: "+label);
                 var attackerIds=new HashSet<int>(attack.entities);var start=army.Where(e=>attackerIds.Contains(e.id)).Average(e=>e.position.x);
                 int repeated=0;bool retargeted=false;
@@ -31,12 +40,12 @@ static class AiTacticsChecks
                     retargeted|=extra.Any(c=>c.kind==CommandKind.AttackMove&&c.position.Distance(Center(sim,second))<.1f);
                 }
                 check(!loneSent,"AI holds a lone reinforcement until a useful group is ready: "+label);
-                for(int i=0;i<4;i++)Add(sim,0,i%2==0?"melee":"ranged",new Point(18+i*1.5f,24));
+                for(int i=0;i<7;i++)Add(sim,0,i%2==0?"melee":"ranged",new Point(18+i*1.5f,24));
                 bool reinforced=false;
                 for(int tick=0;tick<mode.reaction*Simulation.TickRate;tick++)
                 {
                     sim.Step();var extra=Execute(sim,bot,check,label+" reinforcement batch");
-                    reinforced|=extra.Any(c=>c.kind==CommandKind.AttackMove&&c.entities.Length>=Math.Max(3,(mode.level==AiDifficulty.Easy?6:mode.level==AiDifficulty.Normal?9:10)/2)&&c.entities.All(id=>!attackerIds.Contains(id)));
+                    reinforced|=extra.Any(c=>c.kind==CommandKind.AttackMove&&c.entities.Length>=Math.Max(3,(mode.level==AiDifficulty.Easy?8:14)/2)&&c.entities.All(id=>!attackerIds.Contains(id)));
                     retargeted|=extra.Any(c=>c.kind==CommandKind.AttackMove&&c.position.Distance(Center(sim,second))<.1f);
                 }
                 check(reinforced,"AI reinforces the ongoing attack with a coordinated group: "+label);

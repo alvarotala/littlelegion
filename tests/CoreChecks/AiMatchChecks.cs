@@ -33,7 +33,7 @@ static class AiMatchChecks
         string baselineSource=Option("baseline-source",Path.Combine(root,"TestResults/ai-before/LegacyStrategist.cs"));
         string dataDirectory=Option("data-dir",Path.Combine(root,"Assets/Frontier/Resources"));
         var cases=new List<Case>();
-        // The first six cases with --difficulty=all cover all levels and both maps
+        // The first nine cases with --difficulty=all cover all levels and three maps
         // in the industrial mirror. Broader runs then swap sides and faction pairs.
         foreach(string currentFaction in Factions)foreach(string oldFaction in Factions)
         {
@@ -215,6 +215,8 @@ static class AiMatchChecks
         var producers=own.Where(e=>e.complete&&catalog[e.definition].role!="hq"&&catalog.CanProduceUnits(e.definition)).ToArray();
         int busy=producers.Count(e=>e.queue.Count>0);
         int bases=own.Count(e=>e.complete&&catalog[e.definition].role=="hq");
+        if(stats.firstSiegeSeconds<0&&own.Any(e=>catalog[e.definition].role=="siege"))stats.firstSiegeSeconds=seconds;
+        if(stats.firstCasterSeconds<0&&own.Any(e=>catalog[e.definition].role=="caster"))stats.firstCasterSeconds=seconds;
         stats.peakCompletedBases=Math.Max(stats.peakCompletedBases,bases);
         if(bases>=2&&stats.secondHeadquartersCompletedSeconds<0)stats.secondHeadquartersCompletedSeconds=seconds;
         if(bases>=3&&stats.thirdHeadquartersCompletedSeconds<0)stats.thirdHeadquartersCompletedSeconds=seconds;
@@ -231,6 +233,8 @@ static class AiMatchChecks
             var sample=new SamplePoint{seconds=seconds,workers=workers,queuedWorkers=queuedWorkers,army=army,queuedArmy=queuedArmy,
                 minerals=sim.Players[stats.side].minerals,catalyst=sim.Players[stats.side].catalyst,supply=sim.Population(stats.side)+sim.Reserved(stats.side),capacity=sim.Capacity(stats.side),
                 bases=bases,militaryProducers=producers.Length,busyMilitaryProducers=busy,
+                armyPopulation=own.Where(e=>!catalog[e.definition].building&&catalog[e.definition].role!="worker").Sum(e=>catalog[e.definition].supply),
+                attackLevel=sim.Players[stats.side].attackLevel,armorLevel=sim.Players[stats.side].armorLevel,
                 mineralsDelivered=stats.mineralsDelivered,catalystDelivered=stats.catalystDelivered,
                 armyByRole=own.Where(e=>!catalog[e.definition].building&&catalog[e.definition].role!="worker").GroupBy(e=>catalog[e.definition].role).ToDictionary(g=>g.Key,g=>g.Count()),
                 queuedUnitsByRole=own.SelectMany(e=>e.queue).Where(q=>!q.research).GroupBy(q=>catalog[q.definition].role).ToDictionary(g=>g.Key,g=>g.Count()),
@@ -264,6 +268,7 @@ static class AiMatchChecks
         public int side,accepted,rejected,rejectedBuilds,unitsOrdered,buildingsOrdered,castsOrdered,castsExecuted,peakArmy,peakWorkers,largestOffensiveOrder;
         public int structuresDestroyed,unitsDestroyed,producerSeconds,busyProducerSeconds,idleWorkerSeconds,supplyBlockedSeconds;
         public int firstScoutOrderSeconds=-1,firstScoutLeftHomeSeconds=-1,secondHeadquartersOrderedSeconds=-1,thirdHeadquartersOrderedSeconds=-1;
+        public int firstSiegeSeconds=-1,firstCasterSeconds=-1;
         public int secondHeadquartersCompletedSeconds=-1,thirdHeadquartersCompletedSeconds=-1,peakCompletedBases,mineralsGathered,catalystGathered,mineralsDelivered,catalystDelivered;
         public int firstOffensiveOrderSeconds=-1,firstEnemyBaseSeenSeconds=-1;public float firstDamageSeconds=-1,firstHeadquartersDamageSeconds=-1,netHpDamage;
         public string faction="";public Dictionary<string,int> rejections=new(),unitsOrderedByRole=new(),buildingsOrderedByRole=new();public List<SamplePoint> samples=new();
@@ -271,7 +276,7 @@ static class AiMatchChecks
     private sealed class SamplePoint
     {
         public int seconds,workers,queuedWorkers,army,queuedArmy,minerals,catalyst,supply,capacity,bases,militaryProducers,busyMilitaryProducers,buildings;
-        public int mineralsDelivered,catalystDelivered;
+        public int mineralsDelivered,catalystDelivered,armyPopulation,attackLevel,armorLevel;
         public Dictionary<string,int> armyByRole=new(),queuedUnitsByRole=new();
         public float armyHealth;
     }

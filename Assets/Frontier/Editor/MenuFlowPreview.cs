@@ -131,9 +131,9 @@ namespace Frontier.Editor
                 Click("Map: Neon Loop");Check(session.MapId=="desert"&&session.Map.width==160&&session.Map.height==160&&session.Map.theme=="desert","Map selection reaches Desser Alert with its desert theme");
                 CheckMapDescription("160 × 160 · 8 zones · 1v1\n48m/16g · Desert");Capture("05-desert-setup");
                 Click("Map: Desser Alert");Check(session.MapId=="rift","Map selection cycles through all three maps");
-                Click("AI: Normal");Check(session.Difficulty=="hard"&&Has("AI: Hard")&&Field<Text>(panel,"harvesting").text.Contains("2:30"),"Setup offers Hard with its earlier attack description");Capture("05-hard");
+                Click("AI: Normal");Check(session.Difficulty=="hard"&&Has("AI: Hard")&&Field<Text>(panel,"harvesting").text.Contains("3:00"),"Setup offers Hard with its earlier attack description");Capture("05-hard");
                 Click("AI: Hard");Check(session.Difficulty=="easy"&&Has("AI: Easy")&&Field<Text>(panel,"harvesting").text.Contains("5 min"),"Hard cycles to Easy");
-                Click("AI: Easy");Check(session.Difficulty=="normal"&&Has("AI: Normal")&&Field<Text>(panel,"harvesting").text.Contains("3:30"),"Easy cycles to Normal");Click("AI: Normal");
+                Click("AI: Easy");Check(session.Difficulty=="normal"&&Has("AI: Normal")&&Field<Text>(panel,"harvesting").text.Contains("4:00"),"Easy cycles to Normal");Click("AI: Normal");
                 typeof(QuestBridge).GetField("restoring",Private).SetValue(quest,true);Click("START MATCH");
                 Check(quest.StartPending&&!quest.Placing&&!session.Running&&Field<Text>(panel,"status").text=="Restoring your saved board…","A pending start keeps restoration feedback visible without starting placement or a match");
                 typeof(CommandPanel).GetField("menuMessageUntil",Private).SetValue(panel,Time.unscaledTime-1);Refresh();

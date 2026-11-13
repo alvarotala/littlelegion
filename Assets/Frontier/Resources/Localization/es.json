@@ -4405,8 +4405,8 @@
       "template": false
     },
     {
-      "key": " · Attacks from 3:30.",
-      "value": " · Ataca desde 3:30.",
+      "key": " · Attacks from 4:00.",
+      "value": " · Ataca desde 4:00.",
       "template": false
     },
     {
@@ -4475,8 +4475,8 @@
       "template": false
     },
     {
-      "key": " · Sustained attacks from 2:30.",
-      "value": " · Ataques constantes desde 2:30.",
+      "key": " · Sustained attacks from 3:00.",
+      "value": " · Ataques constantes desde 3:00.",
       "template": false
     },
     {
@@ -6530,8 +6530,8 @@
       "template": true
     },
     {
-      "key": "{0} · Attacks from 3:30.",
-      "value": "{0} · Ataca desde 3:30.",
+      "key": "{0} · Attacks from 4:00.",
+      "value": "{0} · Ataca desde 4:00.",
       "template": true
     },
     {
@@ -6540,8 +6540,8 @@
       "template": true
     },
     {
-      "key": "{0} · Sustained attacks from 2:30.",
-      "value": "{0} · Ataques constantes desde 2:30.",
+      "key": "{0} · Sustained attacks from 3:00.",
+      "value": "{0} · Ataques constantes desde 3:00.",
       "template": true
     },
     {
@@ -7300,8 +7300,8 @@
       "template": false
     },
     {
-      "key": "· Attacks from 3:30.",
-      "value": "· Ataca desde 3:30.",
+      "key": "· Attacks from 4:00.",
+      "value": "· Ataca desde 4:00.",
       "template": false
     },
     {
@@ -7370,8 +7370,8 @@
       "template": false
     },
     {
-      "key": "· Sustained attacks from 2:30.",
-      "value": "· Ataques constantes desde 2:30.",
+      "key": "· Sustained attacks from 3:00.",
+      "value": "· Ataques constantes desde 3:00.",
       "template": false
     },
     {

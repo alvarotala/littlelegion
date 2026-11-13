@@ -47,6 +47,11 @@ namespace Frontier.Core
             int plannedWorkers=Math.Max(workerGoal,producerCounts["worker"]);
             int armyGoal=Math.Min(Simulation.UnitLimit-plannedWorkers,pace.army+Math.Max(0,pace.workers-plannedWorkers));
             int militaryCount=producerCounts.Where(p=>p.Key!="worker").Sum(p=>p.Value);
+            var military=own.Where(e=>e.complete&&e.health>0&&!Type(e).building&&Type(e).role!="worker").ToArray();
+            float healthyArmy=military.Sum(e=>e.health/Type(e).health);
+            bool underPressure=bases.Any(b=>view.entities.Where(e=>e.owner!=player&&!e.remembered&&e.health>0&&Type(e).damage>0
+                &&(Type(e).role!="worker"||e.attackTick>=view.tick-Seconds(2))&&Center(e).Distance(Center(b))<18).Sum(CombatPower)
+                >=Math.Max(30,military.Where(e=>e.position.Distance(Center(b))<18).Sum(CombatPower)*.5f));
 
             void AbandonExpansion()
             {
@@ -85,7 +90,7 @@ namespace Frontier.Core
 
             bool depleted=mineralResources.Length==0 || mineralResources.All(r=>r.remaining>=0)
                 &&mineralResources.Sum(r=>r.remaining)<Math.Max(1400,workers.Length*140);
-            bool expansionDue=depleted || view.tick>=Seconds(pace.expansion)&&workers.Length>=8;
+            bool expansionDue=depleted || !underPressure&&view.tick>=Seconds(pace.expansion)&&workers.Length>=8;
             int maxBases=Difficulty==AiDifficulty.Hard?3:2;
             // Commit the expansion budget before optional buildings and military
             // queues consume it. Send its scout while those minerals accumulate.
@@ -119,18 +124,18 @@ namespace Frontier.Core
             int gasSites=view.resources.Count(r=>r.kind=="catalyst"&&r.remaining!=0
                 &&readyBases.Any(b=>Center(b).Distance(r.position)<=Harvesting.BaseRadius));
             if(Count("extractor")<gasSites&&view.tick>=Seconds(pace.extractor))priorities.Add("extractor");
-            if(Count("tech")==0&&Complete("barracks")&&view.tick>=Seconds(pace.tech)&&militaryCount>=6)priorities.Add("tech");
-            if(Count("academy")==0&&Complete("tech")&&view.tick>=Seconds(pace.academy)&&militaryCount>=10)priorities.Add("academy");
-            if(Count("research")==0&&Complete("barracks")&&view.tick>=Seconds(pace.research)-catalog.Role(view.faction,"research").duration&&militaryCount>=12)priorities.Add("research");
+            if(!underPressure&&Count("tech")==0&&Complete("barracks")&&view.tick>=Seconds(pace.tech)&&healthyArmy>=6)priorities.Add("tech");
+            if(!underPressure&&Count("academy")==0&&Complete("tech")&&view.tick>=Seconds(pace.academy)&&healthyArmy>=10)priorities.Add("academy");
+            if(!underPressure&&Count("research")==0&&Complete("barracks")&&view.tick>=Seconds(pace.research)-catalog.Role(view.faction,"research").duration&&healthyArmy>=12)priorities.Add("research");
             int wantedBarracks=Math.Min(pace.barracks,1+readyBases.Length+(workers.Length>=18?1:0));
-            if(Count("barracks")<wantedBarracks&&Complete("barracks")&&workers.Length>=8
+            if(!underPressure&&Count("barracks")<wantedBarracks&&Complete("barracks")&&workers.Length>=8
                 &&(minerals>=225||Complete("tech")))priorities.Add("barracks");
             int wantedTowers=Difficulty==AiDifficulty.Easy?readyBases.Length:Math.Min(readyBases.Length*2,readyBases.Length+(militaryCount>=20?1:0));
             if(Count("defense")<wantedTowers&&Complete("barracks")&&view.tick>=Seconds(pace.defense)
                 &&(militaryCount>=12||view.entities.Any(e=>e.owner!=player&&!e.remembered&&bases.Any(b=>Center(b).Distance(e.position)<18))))
                 priorities.Add("defense");
 
-            int expansionCost=planningExpansion?catalog.Role(view.faction,"hq").minerals:0;
+            int expansionCost=planningExpansion&&(!underPressure||depleted)?catalog.Role(view.faction,"hq").minerals:0;
             int saveMinerals=0,builds=0;
             if(view.tick>=economyBuildAt)
             foreach(string role in priorities.Distinct())
@@ -166,7 +171,7 @@ namespace Frontier.Core
                     var plan=EconomyBuildSpot(view,own,new[]{scout},headquarters,expansionResource);
                     if(plan.HasValue)expansionBlockedAt=-1;
                     else if(scout.position.Distance(expansionResource)<10&&expansionBlockedAt<0)expansionBlockedAt=view.tick;
-                    if(view.tick>=economyBuildAt&&Afford(headquarters)&&own.Count(e=>Type(e).building)+builds<Simulation.BuildingLimit)
+                    if((!underPressure||depleted)&&view.tick>=economyBuildAt&&Afford(headquarters)&&own.Count(e=>Type(e).building)+builds<Simulation.BuildingLimit)
                     {
                         if(plan.HasValue)
                         {
@@ -187,23 +192,31 @@ namespace Frontier.Core
                     }
                 }
             }
-            if(planningExpansion)saveMinerals=Math.Max(saveMinerals,Math.Min(minerals,expansionCost));
+            if(planningExpansion&&(!underPressure||depleted))saveMinerals=Math.Max(saveMinerals,Math.Min(minerals,expansionCost));
 
             // Keep workers on useful local jobs; deliberate transfers can reach a
             // completed expansion when the old mineral line has run dry.
             var assignments=view.resources.ToDictionary(r=>r.id,r=>r.assignedWorkers);
             bool rebalance=view.tick>=economyBalanceAt;
             if(rebalance)economyBalanceAt=view.tick+Seconds(10);
-            int gasTarget=view.catalyst>=600?1:workers.Length>=10?3:workers.Length>=8?2:1;
+            // Stockpile for the next technology step and one production cycle.
+            // Saturating every geyser indefinitely leaves the much more expensive
+            // mineral economy unable to build the army that this gas is meant for.
+            int gasReserve=Complete("tech")?catalog.Role(view.faction,"siege").catalyst*2:catalog.Role(view.faction,"tech").catalyst;
+            if(Complete("tech"))gasReserve+=Complete("academy")?catalog.Role(view.faction,"caster").catalyst*2:catalog.Role(view.faction,"academy").catalyst;
+            if(Complete("research"))gasReserve+=catalog.Definition.upgrades.Where(u=>catalog.CanResearch(u,view.researched)
+                &&(string.IsNullOrEmpty(u.requires)||Complete(u.requires))).Select(u=>u.catalyst).DefaultIfEmpty(0).Max();
+            bool preparingTech=Count("tech")>0||view.tick>=Seconds(Math.Max(0,pace.tech-60));
+            int gasTarget=view.catalyst>=gasReserve?0:preparingTech&&workers.Length>=10?3:1;
             foreach(var worker in workers.Where(w=>!assignedWorkers.Contains(w.id)&&w.id!=expansionWorker))
             {
                 bool gathering=worker.order==CommandKind.Gather;
                 if(worker.order!=CommandKind.Stop&&worker.order!=CommandKind.Hold&&!(gathering&&rebalance))continue;
                 var current=view.resources.FirstOrDefault(r=>r.id==worker.target);
                 if(gathering&&current!=null&&assignments.ContainsKey(current.id))assignments[current.id]=Math.Max(0,assignments[current.id]-1);
-                var resource=localResources.OrderBy(r=>
+                var resource=localResources.Where(r=>r.kind!="catalyst"||gasTarget>0||mineralResources.Length==0).OrderBy(r=>
                 {
-                    int target=r.kind=="catalyst"?gasTarget:r.optimalWorkers;
+                    int target=r.kind=="catalyst"?Math.Max(1,gasTarget):r.optimalWorkers;
                     return (assignments[r.id]>=target?100:0)+assignments[r.id]*18f/target
                         +worker.position.Distance(r.position)*.25f+(r.kind=="catalyst"&&view.catalyst<100?-8:0)
                         +(current!=null&&current.id==r.id?-3:0);
@@ -239,7 +252,7 @@ namespace Frontier.Core
                 Reserve(workerType);supply+=workerType.supply;producerCounts["worker"]++;usedProducers.Add(hq.id);producerReadyAt[hq.id]=view.tick+Seconds(pace.recruit);
                 orders.Add(Command(CommandKind.Train,hq.id,definition:workerType.id));
             }
-            if(view.tick>=Seconds(pace.research)&&view.tick>=economyResearchAt&&producerCounts["siege"]>0&&militaryCount>=16)
+            if(!underPressure&&view.tick>=Seconds(pace.research)&&view.tick>=economyResearchAt&&producerCounts["siege"]>0&&healthyArmy>=16)
             {
                 var upgrade=catalog.Definition.upgrades.FirstOrDefault(u=>catalog.CanResearch(u,view.researched)
                     &&(string.IsNullOrEmpty(u.requires)||Complete(u.requires))
